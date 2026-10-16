@@ -6,7 +6,7 @@
 
 ```
 gutacosmetic/
-├── app/       # Ứng dụng Flutter (Riverpod, GoRouter, Dio)
+├── app/       # Ứng dụng Flutter
 └── backend/   # API Node.js/Express + MongoDB
 ```
 
@@ -32,10 +32,24 @@ npm run dev                 # API chạy tại http://localhost:5000/api
 ```powershell
 cd app
 flutter pub get
+```
+
+**Trên Chrome:**
+
+```powershell
 flutter run -d chrome --web-port 8080
 ```
 
-Không truyền `API_BASE_URL` thì app tự gọi `http://localhost:5000/api` (Chrome) hoặc `http://10.0.2.2:5000/api` (Android emulator). Chạy trên điện thoại thật thì truyền IP máy chạy backend:
+**Trên máy ảo Android:**
+
+```powershell
+flutter emulators                     # xem danh sách máy ảo
+flutter emulators --launch <tên máy ảo>   # vd. Pixel_6a
+flutter devices                       # đợi máy ảo khởi động, lấy id (vd. emulator-5554)
+flutter run -d emulator-5554
+```
+
+Không truyền `API_BASE_URL` thì app tự gọi `http://localhost:5000/api` (Chrome) hoặc `http://10.0.2.2:5000/api` (máy ảo Android — `10.0.2.2` là máy tính đang chạy backend). Chạy trên điện thoại thật thì truyền IP máy chạy backend:
 
 ```powershell
 flutter run --dart-define=API_BASE_URL=http://192.168.1.10:5000/api
