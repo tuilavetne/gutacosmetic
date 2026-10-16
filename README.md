@@ -55,13 +55,6 @@ Không truyền `API_BASE_URL` thì app tự gọi `http://localhost:5000/api` (
 flutter run --dart-define=API_BASE_URL=http://192.168.1.10:5000/api
 ```
 
-> **Lưu ý:** nếu đường dẫn thư mục có dấu tiếng Việt (vd. `KÌ 8`), `build_runner` và một số lệnh Flutter sẽ lỗi. Tạo đường dẫn tắt không dấu rồi chạy từ đó:
->
-> ```powershell
-> New-Item -ItemType Junction -Path E:\guta -Target "<đường dẫn tới>\gutacosmetic\app"
-> cd E:\guta
-> ```
-
 ## Tài khoản demo
 
 Sau khi chạy `npm run seed:demo-users`:
