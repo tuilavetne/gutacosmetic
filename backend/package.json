@@ -1,0 +1,36 @@
+{
+  "name": "guta-cosmetic-pos-backend",
+  "version": "1.0.0",
+  "private": true,
+  "description": "GUTA Cosmetic POS demo API",
+  "main": "server.js",
+  "scripts": {
+    "dev": "nodemon server.js",
+    "start": "node server.js",
+    "seed": "node seed.js",
+    "seed:real-products": "node seedRealProducts.js",
+    "seed:demo-users": "node scripts/seedDemoUsers.js",
+    "seed:demo-stores": "node scripts/seedDemoStores.js",
+    "check:transactions": "node scripts/checkTransactions.js",
+    "check:email": "node scripts/checkEmailOtp.js",
+    "db:sync-user-indexes": "node scripts/syncUserIndexes.js"
+  },
+  "dependencies": {
+    "@payos/node": "^2.0.5",
+    "bcryptjs": "^3.0.2",
+    "cloudinary": "^1.41.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.6.1",
+    "express": "^5.1.0",
+    "google-auth-library": "^10.7.0",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.16.1",
+    "multer": "^2.2.0",
+    "multer-storage-cloudinary": "^4.0.0",
+    "nodemailer": "^9.0.1",
+    "qrcode": "^1.5.4"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10"
+  }
+}

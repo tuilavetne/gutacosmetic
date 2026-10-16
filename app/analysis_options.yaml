@@ -1,0 +1,22 @@
+include: package:flutter_lints/flutter.yaml
+
+analyzer:
+  exclude:
+    - build/**
+    - android/**
+    - ios/**
+    - web/**
+    - windows/**
+    - macos/**
+    - linux/**
+    - lib/**/*.g.dart
+    - lib/**/*.freezed.dart
+  errors:
+    # freezed Ä‘áº·t @JsonKey lÃªn tham sá»‘ factory â€” Ä‘Ã¢y lÃ  cÃ¡ch dÃ¹ng chÃ­nh thá»©c.
+    invalid_annotation_target: ignore
+
+linter:
+  rules:
+    prefer_single_quotes: true
+    always_declare_return_types: true
+    avoid_print: true
