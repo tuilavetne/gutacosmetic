@@ -7,10 +7,15 @@ import '../features/auth/presentation/forgot_password_screen.dart';
 import '../features/auth/presentation/login_screen.dart';
 import '../features/auth/presentation/register_screen.dart';
 import '../features/customer/presentation/account_screen.dart';
+import '../features/customer/presentation/cart_screen.dart';
 import '../features/customer/presentation/category_screen.dart';
+import '../features/customer/presentation/checkout_screen.dart';
 import '../features/customer/presentation/customer_shell.dart';
 import '../features/customer/presentation/edit_profile_screen.dart';
 import '../features/customer/presentation/home_screen.dart';
+import '../features/customer/presentation/order_detail_screen.dart';
+import '../features/customer/presentation/orders_screen.dart';
+import '../features/customer/presentation/payos_payment_screen.dart';
 import '../features/customer/presentation/product_detail_screen.dart';
 import '../features/customer/presentation/wishlist_screen.dart';
 import '../features/session/presentation/select_store_screen.dart';
@@ -111,8 +116,23 @@ final routerProvider = Provider<GoRouter>((ref) {
             routes: [
               GoRoute(
                 path: AppRoutes.customerOrders,
-                builder: (context, state) =>
-                    const PhasePlaceholder(title: 'Đơn hàng', phase: 4),
+                builder: (context, state) => const CustomerOrdersScreen(),
+                routes: [
+                  GoRoute(
+                    path: ':id',
+                    builder: (context, state) =>
+                        OrderDetailScreen(orderId: state.pathParameters['id']!),
+                    routes: [
+                      GoRoute(
+                        path: 'payment',
+                        parentNavigatorKey: _rootNavigatorKey,
+                        builder: (context, state) => PayosPaymentScreen(
+                          orderId: state.pathParameters['id']!,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ],
           ),
@@ -143,8 +163,11 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: AppRoutes.customerCart,
-        builder: (context, state) =>
-            const PhasePlaceholder(title: 'Giỏ hàng', phase: 4),
+        builder: (context, state) => const CartScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.customerCheckout,
+        builder: (context, state) => const CheckoutScreen(),
       ),
     ],
     errorBuilder: (context, state) => const PhasePlaceholder(

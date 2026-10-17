@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:gutacosmetic/core/storage/local_storage.dart';
 import 'package:gutacosmetic/core/utils/constants.dart';
 import 'package:gutacosmetic/features/customer/cart/cart_controller.dart';
+import 'package:gutacosmetic/features/customer/cart/cart_item.dart';
 import 'package:gutacosmetic/features/session/session_controller.dart';
 import 'package:gutacosmetic/features/shared/models/models.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -99,5 +100,44 @@ void main() {
     );
     expect(c.read(cartControllerProvider.notifier).add(_serum), 0);
     expect(c.read(cartControllerProvider), isEmpty);
+  });
+
+  test('addItems ("Mua lại") cộng dồn và giới hạn tối đa', () async {
+    final c = await _container();
+    final cart = c.read(cartControllerProvider.notifier)
+      ..add(_serum, quantity: AppConstants.maxCartQuantity - 1);
+
+    final added = cart.addItems([
+      CartItem.fromProduct(_serum, 3),
+      CartItem.fromProduct(_toner, 2),
+      const CartItem(productId: '', quantity: 1),
+    ]);
+
+    expect(added, 1 + 2);
+    expect(
+      c.read(cartControllerProvider).map((e) => (e.productId, e.quantity)),
+      [('p1', AppConstants.maxCartQuantity), ('p2', 2)],
+    );
+    expect(cart.addItems([CartItem.fromProduct(_serum, 1)]), 0);
+  });
+
+  test('refreshProducts cập nhật giá mới, giữ số lượng', () async {
+    final c = await _container();
+    final cart = c.read(cartControllerProvider.notifier)
+      ..add(_serum, quantity: 2)
+      ..add(_toner);
+
+    expect(cart.refreshProducts([_serum, _toner]), isFalse);
+    expect(
+      cart.refreshProducts([_serum.copyWith(price: 180000, name: 'Serum mới')]),
+      isTrue,
+    );
+
+    final items = c.read(cartControllerProvider);
+    expect(items.first.unitPrice, 180000);
+    expect(items.first.name, 'Serum mới');
+    expect(items.first.quantity, 2);
+    expect(items.last.unitPrice, 150000);
+    expect(c.read(cartSubtotalProvider), 2 * 180000 + 150000);
   });
 }

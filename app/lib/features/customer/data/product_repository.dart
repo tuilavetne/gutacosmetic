@@ -30,6 +30,15 @@ final productStockProvider = FutureProvider.autoDispose
       (ref, id) => ref.watch(productRepositoryProvider).fetchStoreStocks(id),
     );
 
+/// Tồn kho của nhiều sản phẩm (giỏ hàng lúc thanh toán). Khóa là các id nối
+/// bằng dấu phẩy, đã sắp xếp — đổi số lượng không phải tải lại.
+final productsStockProvider = FutureProvider.autoDispose
+    .family<List<ProductInventory>, String>(
+      (ref, ids) => ref
+          .watch(productRepositoryProvider)
+          .fetchInventories(ids.split(',').where((e) => e.isNotEmpty)),
+    );
+
 class ProductRepository {
   ProductRepository(this._api);
 
@@ -77,5 +86,19 @@ class ProductRepository {
       ...stocks.where((e) => !e.store.isCentral),
       ...stocks.where((e) => e.store.isCentral),
     ];
+  }
+
+  /// `GET /inventory/products?productIds=a,b` — chỉ trả sản phẩm còn bán;
+  /// mỗi sản phẩm kèm tồn của mọi cửa hàng đang hoạt động.
+  Future<List<ProductInventory>> fetchInventories(
+    Iterable<String> productIds,
+  ) async {
+    final ids = productIds.toList();
+    if (ids.isEmpty) return const [];
+    final json = await _api.get(
+      '/inventory/products',
+      query: {'productIds': ids},
+    );
+    return parseList(json, 'products', ProductInventory.fromJson);
   }
 }

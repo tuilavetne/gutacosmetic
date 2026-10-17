@@ -160,6 +160,8 @@ void _mockPathProvider() {
       );
 }
 
-/// SnackBar nổi ở đáy có thể che nút phía dưới — xóa trước khi bấm.
-void clearSnackBars() =>
-    rootScaffoldMessengerKey.currentState?.clearSnackBars();
+/// SnackBar nổi ở đáy có thể che nút phía dưới — gỡ ngay (không chờ hiệu
+/// ứng thoát) trước khi bấm.
+void clearSnackBars() => rootScaffoldMessengerKey.currentState
+  ?..clearSnackBars()
+  ..removeCurrentSnackBar();

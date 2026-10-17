@@ -32,6 +32,9 @@ abstract final class AppConstants {
 
   /// PayOS QR có hiệu lực 15 phút.
   static const Duration payosLinkLifetime = Duration(minutes: 15);
+
+  /// Chu kỳ tự hỏi PayOS khi đang mở màn quét QR.
+  static const Duration payosPollInterval = Duration(seconds: 5);
 }
 
 class ProductCategory {

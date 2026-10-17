@@ -23,6 +23,12 @@ abstract final class AppRoutes {
 
   // Màn con của khách hàng — mở đè lên bottom navigation.
   static const customerCart = '/customer/cart';
+  static const customerCheckout = '/customer/checkout';
+
+  // Chi tiết đơn nằm trong tab Đơn hàng; màn thanh toán QR mở toàn màn hình.
+  static String customerOrder(String id) => '/customer/orders/$id';
+  static String customerOrderPayment(String id) =>
+      '/customer/orders/$id/payment';
   static const customerWishlist = '/customer/wishlist';
   static const customerEditProfile = '/customer/profile/edit';
   static const customerProductPattern = '/customer/products/:id';

@@ -74,6 +74,52 @@ class CartController extends Notifier<List<CartItem>> {
     return added;
   }
 
+  /// Thêm nhiều dòng một lúc ("Mua lại" một đơn cũ); trả về tổng số lượng
+  /// thực sự được thêm.
+  int addItems(Iterable<CartItem> lines) {
+    if (_userId == null) return 0;
+    final items = [...state];
+    var added = 0;
+    for (final line in lines) {
+      if (line.productId.isEmpty || line.quantity <= 0) continue;
+      final index = items.indexWhere((e) => e.productId == line.productId);
+      final current = index < 0 ? 0 : items[index].quantity;
+      final next = (current + line.quantity).clamp(
+        0,
+        AppConstants.maxCartQuantity,
+      );
+      if (next <= current) continue;
+      added += next - current;
+      if (index < 0) {
+        items.add(line.copyWith(quantity: next));
+      } else {
+        items[index] = items[index].copyWith(quantity: next);
+      }
+    }
+    if (added > 0) _save(items);
+    return added;
+  }
+
+  /// Cập nhật tên/giá/ảnh theo dữ liệu mới nhất từ server (giữ số lượng).
+  /// Trả về `true` nếu có giá thay đổi.
+  bool refreshProducts(Iterable<Product> products) {
+    final byId = {for (final p in products) p.id: p};
+    var priceChanged = false;
+    var changed = false;
+    final items = <CartItem>[];
+    for (final e in state) {
+      final product = byId[e.productId];
+      final fresh = product == null
+          ? e
+          : CartItem.fromProduct(product, e.quantity);
+      if (fresh.unitPrice != e.unitPrice) priceChanged = true;
+      if (fresh != e) changed = true;
+      items.add(fresh);
+    }
+    if (changed) _save(items);
+    return priceChanged;
+  }
+
   /// Đặt số lượng; `<= 0` thì xóa khỏi giỏ.
   void setQuantity(String productId, int quantity) {
     if (quantity <= 0) return remove(productId);
