@@ -6,15 +6,18 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../../app/routes.dart';
 import '../../../app/theme.dart';
+import '../../../core/network/api_exception.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_messenger.dart';
 import '../../../core/widgets/state_views.dart';
 import '../../shared/models/models.dart';
 import '../data/order_repository.dart';
+import '../data/review_repository.dart';
 import '../orders/order_actions.dart';
 import '../orders/order_display.dart';
 import 'widgets/order_widgets.dart';
+import 'widgets/product_reviews_section.dart' show ReviewCard;
 
 /// Chi tiết đơn: trạng thái + tiến trình, nhận hàng, sản phẩm, thanh toán,
 /// lịch sử. Hủy đơn / thanh toán QR / mua lại ở thanh dưới.
@@ -64,6 +67,8 @@ class OrderDetailScreen extends ConsumerWidget {
                     ],
                   ),
                 ),
+                if (order.status == OrderStatus.completed)
+                  _ReviewSection(order: order),
                 _PaymentCard(order: order),
                 _HistoryCard(order: order),
               ],
@@ -534,6 +539,115 @@ class _HistoryCard extends StatelessWidget {
   }
 }
 
+/// Đơn hoàn tất: mời đánh giá, hoặc hiện đánh giá đã viết kèm Sửa / Xóa.
+class _ReviewSection extends ConsumerWidget {
+  const _ReviewSection({required this.order});
+
+  final Order order;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final actions = OrderActions(context, ref, order);
+    if (!order.isReviewed) {
+      return TitledCard(
+        title: 'Đánh giá của bạn',
+        child: Row(
+          children: [
+            const Icon(Icons.rate_review_outlined, color: AppColors.primary),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Text(
+                'Bạn thấy sản phẩm thế nào? Chia sẻ cảm nhận để giúp những '
+                'khách hàng khác nhé.',
+                style: TextStyle(height: 1.4),
+              ),
+            ),
+            const SizedBox(width: 8),
+            TextButton(
+              onPressed: actions.review,
+              child: const Text('Viết đánh giá'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final reviewAsync = ref.watch(orderReviewProvider(order.id));
+    final review = reviewAsync.value;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(4, 20, 4, 8),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Đánh giá của bạn',
+                  style: Theme.of(context).textTheme.titleSmall
+                      ?.copyWith(fontWeight: FontWeight.w700),
+                ),
+              ),
+              if (review != null) ...[
+                TextButton.icon(
+                  onPressed: actions.review,
+                  icon: const Icon(Icons.edit_outlined, size: 18),
+                  label: const Text('Sửa'),
+                ),
+                TextButton.icon(
+                  style: TextButton.styleFrom(
+                    foregroundColor: AppColors.accent,
+                  ),
+                  onPressed: () => _delete(actions, review),
+                  icon: const Icon(Icons.delete_outline, size: 18),
+                  label: const Text('Xóa'),
+                ),
+              ],
+            ],
+          ),
+        ),
+        if (review != null)
+          ReviewCard(review: review)
+        else if (reviewAsync.hasError)
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              child: InlineError(
+                message: 'Không tải được đánh giá.',
+                onRetry: () => ref.invalidate(orderReviewProvider(order.id)),
+              ),
+            ),
+          )
+        else if (reviewAsync.isLoading)
+          const Card(
+            child: Padding(
+              padding: EdgeInsets.all(20),
+              child: Center(child: CircularProgressIndicator()),
+            ),
+          )
+        else
+          const Card(
+            child: Padding(
+              padding: EdgeInsets.all(14),
+              child: Text(
+                'Không tìm thấy đánh giá của đơn này.',
+                style: TextStyle(color: AppColors.muted),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Future<void> _delete(OrderActions actions, Review review) async {
+    try {
+      await actions.deleteReview(review);
+    } catch (e) {
+      showAppSnackBar(errorMessageOf(e), isError: true);
+    }
+  }
+}
+
 class _ActionBar extends ConsumerWidget {
   const _ActionBar({required this.order});
 
@@ -564,7 +678,18 @@ class _ActionBar extends ConsumerWidget {
           child: AppButton(
             label: 'Mua lại',
             icon: Icons.replay,
+            variant: order.canReview
+                ? AppButtonVariant.outlined
+                : AppButtonVariant.filled,
             onPressed: () async => actions.reorder(),
+          ),
+        ),
+      if (order.canReview)
+        Expanded(
+          child: AppButton(
+            label: 'Đánh giá',
+            icon: Icons.star_outline_rounded,
+            onPressed: actions.review,
           ),
         ),
     ];

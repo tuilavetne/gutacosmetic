@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/network/api_client.dart';
@@ -33,9 +34,22 @@ class OrderRepository {
 
   /// `GET /orders` — backend tự lọc theo khách đang đăng nhập và hủy các đơn
   /// chuyển khoản đã hết hạn QR trước khi trả về.
+  ///
+  /// Đơn có dữ liệu hỏng (không đọc được) bị bỏ qua để không làm hỏng cả
+  /// danh sách.
   Future<List<Order>> fetchOrders() async {
     final json = await _api.get('/orders');
-    return parseList(json, 'orders', Order.fromJson);
+    final raw = json['orders'];
+    if (raw is! List) return const [];
+    final orders = <Order>[];
+    for (final item in raw.whereType<Map<dynamic, dynamic>>()) {
+      try {
+        orders.add(Order.fromJson(Map<String, dynamic>.from(item)));
+      } catch (e) {
+        debugPrint('Bỏ qua đơn ${item['orderCode'] ?? item['_id']}: $e');
+      }
+    }
+    return orders;
   }
 
   /// `GET /orders/:id`

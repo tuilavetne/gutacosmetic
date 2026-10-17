@@ -163,9 +163,19 @@ class OrderCard extends ConsumerWidget {
                 ],
               ),
               const SizedBox(height: 2),
-              Text(
-                '${formatFullDateTime(order.createdAt)} · '
-                '${order.fulfillmentType?.label ?? order.channel.label}',
+              Text.rich(
+                TextSpan(
+                  text:
+                      '${formatFullDateTime(order.createdAt)} · '
+                      '${order.fulfillmentType?.label ?? order.channel.label}',
+                  children: [
+                    if (order.isReviewed)
+                      const TextSpan(
+                        text: ' · ★ Đã đánh giá',
+                        style: TextStyle(color: Color(0xFFE09612)),
+                      ),
+                  ],
+                ),
                 style: const TextStyle(color: AppColors.muted, fontSize: 12),
               ),
               if (first != null) ...[

@@ -64,6 +64,10 @@ class _FakeReviews implements ReviewRepository {
       hasMore: page * limit < reviews.length,
     );
   }
+
+  // Tạo/sửa/xóa đánh giá không dùng ở màn chi tiết sản phẩm.
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 Future<ProviderContainer> _pump(

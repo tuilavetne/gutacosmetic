@@ -18,6 +18,7 @@ import '../features/customer/presentation/orders_screen.dart';
 import '../features/customer/presentation/payos_payment_screen.dart';
 import '../features/customer/presentation/product_detail_screen.dart';
 import '../features/customer/presentation/wishlist_screen.dart';
+import '../features/customer/presentation/write_review_screen.dart';
 import '../features/session/presentation/select_store_screen.dart';
 import '../features/session/presentation/splash_screen.dart';
 import '../features/session/session_controller.dart';
@@ -127,6 +128,13 @@ final routerProvider = Provider<GoRouter>((ref) {
                         path: 'payment',
                         parentNavigatorKey: _rootNavigatorKey,
                         builder: (context, state) => PayosPaymentScreen(
+                          orderId: state.pathParameters['id']!,
+                        ),
+                      ),
+                      GoRoute(
+                        path: 'review',
+                        parentNavigatorKey: _rootNavigatorKey,
+                        builder: (context, state) => WriteReviewScreen(
                           orderId: state.pathParameters['id']!,
                         ),
                       ),

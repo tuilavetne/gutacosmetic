@@ -580,7 +580,7 @@ as int,
 /// @nodoc
 mixin _$StatusHistoryEntry {
 
- OrderStatus get status;@UserRefConverter() EntityRef<AppUser>? get changedBy; String? get note; DateTime? get changedAt;
+@JsonKey(readValue: readEnumValue) OrderStatus get status;@UserRefConverter() EntityRef<AppUser>? get changedBy; String? get note; DateTime? get changedAt;
 /// Create a copy of StatusHistoryEntry
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -618,7 +618,7 @@ abstract mixin class $StatusHistoryEntryCopyWith<$Res>  {
   factory $StatusHistoryEntryCopyWith(StatusHistoryEntry value, $Res Function(StatusHistoryEntry) _then) = _$StatusHistoryEntryCopyWithImpl;
 @useResult
 $Res call({
- OrderStatus status,@UserRefConverter() EntityRef<AppUser>? changedBy, String? note, DateTime? changedAt
+@JsonKey(readValue: readEnumValue) OrderStatus status,@UserRefConverter() EntityRef<AppUser>? changedBy, String? note, DateTime? changedAt
 });
 
 
@@ -726,7 +726,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( OrderStatus status, @UserRefConverter()  EntityRef<AppUser>? changedBy,  String? note,  DateTime? changedAt)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(readValue: readEnumValue)  OrderStatus status, @UserRefConverter()  EntityRef<AppUser>? changedBy,  String? note,  DateTime? changedAt)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _StatusHistoryEntry() when $default != null:
 return $default(_that.status,_that.changedBy,_that.note,_that.changedAt);case _:
@@ -747,7 +747,7 @@ return $default(_that.status,_that.changedBy,_that.note,_that.changedAt);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( OrderStatus status, @UserRefConverter()  EntityRef<AppUser>? changedBy,  String? note,  DateTime? changedAt)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(readValue: readEnumValue)  OrderStatus status, @UserRefConverter()  EntityRef<AppUser>? changedBy,  String? note,  DateTime? changedAt)  $default,) {final _that = this;
 switch (_that) {
 case _StatusHistoryEntry():
 return $default(_that.status,_that.changedBy,_that.note,_that.changedAt);case _:
@@ -767,7 +767,7 @@ return $default(_that.status,_that.changedBy,_that.note,_that.changedAt);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( OrderStatus status, @UserRefConverter()  EntityRef<AppUser>? changedBy,  String? note,  DateTime? changedAt)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(readValue: readEnumValue)  OrderStatus status, @UserRefConverter()  EntityRef<AppUser>? changedBy,  String? note,  DateTime? changedAt)?  $default,) {final _that = this;
 switch (_that) {
 case _StatusHistoryEntry() when $default != null:
 return $default(_that.status,_that.changedBy,_that.note,_that.changedAt);case _:
@@ -782,10 +782,10 @@ return $default(_that.status,_that.changedBy,_that.note,_that.changedAt);case _:
 @JsonSerializable()
 
 class _StatusHistoryEntry implements StatusHistoryEntry {
-  const _StatusHistoryEntry({required this.status, @UserRefConverter() this.changedBy, this.note, this.changedAt});
+  const _StatusHistoryEntry({@JsonKey(readValue: readEnumValue) required this.status, @UserRefConverter() this.changedBy, this.note, this.changedAt});
   factory _StatusHistoryEntry.fromJson(Map<String, dynamic> json) => _$StatusHistoryEntryFromJson(json);
 
-@override final  OrderStatus status;
+@override@JsonKey(readValue: readEnumValue) final  OrderStatus status;
 @override@UserRefConverter() final  EntityRef<AppUser>? changedBy;
 @override final  String? note;
 @override final  DateTime? changedAt;
@@ -825,7 +825,7 @@ abstract mixin class _$StatusHistoryEntryCopyWith<$Res> implements $StatusHistor
   factory _$StatusHistoryEntryCopyWith(_StatusHistoryEntry value, $Res Function(_StatusHistoryEntry) _then) = __$StatusHistoryEntryCopyWithImpl;
 @override @useResult
 $Res call({
- OrderStatus status,@UserRefConverter() EntityRef<AppUser>? changedBy, String? note, DateTime? changedAt
+@JsonKey(readValue: readEnumValue) OrderStatus status,@UserRefConverter() EntityRef<AppUser>? changedBy, String? note, DateTime? changedAt
 });
 
 
@@ -859,7 +859,7 @@ as DateTime?,
 /// @nodoc
 mixin _$Order {
 
-@JsonKey(name: '_id') String get id; String get orderCode; OrderChannel get channel; FulfillmentType? get fulfillmentType;@UserRefConverter() EntityRef<AppUser>? get customerId; String? get customerName; String? get customerPhone; ShippingAddress? get shippingAddress;@StoreRefConverter() EntityRef<Store>? get storeId; List<OrderItem> get items; int get subtotal; int get discountAmount; int get shippingFee; int get totalPrice; int get pointsUsed; int get pointsEarned; OrderStatus get status; PaymentStatus get paymentStatus; PaymentMethod? get paymentMethod; String? get paymentProvider;@StringishConverter() String? get paymentOrderCode; String? get paymentLinkId; String? get checkoutUrl; String? get qrCode; String? get paymentReference;@FlexibleDateTimeConverter() DateTime? get paymentExpiresAt; bool get inventoryReserved;@UserRefConverter() EntityRef<AppUser>? get createdBySalesId;@UserRefConverter() EntityRef<AppUser>? get approvedBySalesId;@UserRefConverter() EntityRef<AppUser>? get paidByManagerId;@UserRefConverter() EntityRef<AppUser>? get cancelledBy; String? get cancellationReason; List<StatusHistoryEntry> get statusHistory; DateTime? get paidAt; DateTime? get completedAt; DateTime? get cancelledAt; bool get isReviewed; DateTime? get createdAt; DateTime? get updatedAt;
+@JsonKey(name: '_id') String get id; String get orderCode;@JsonKey(readValue: readEnumValue) OrderChannel get channel;@JsonKey(readValue: readEnumValue) FulfillmentType? get fulfillmentType;@UserRefConverter() EntityRef<AppUser>? get customerId; String? get customerName; String? get customerPhone; ShippingAddress? get shippingAddress;@StoreRefConverter() EntityRef<Store>? get storeId; List<OrderItem> get items; int get subtotal; int get discountAmount; int get shippingFee; int get totalPrice; int get pointsUsed; int get pointsEarned;@JsonKey(readValue: readEnumValue) OrderStatus get status;@JsonKey(readValue: readEnumValue) PaymentStatus get paymentStatus;@JsonKey(readValue: readEnumValue) PaymentMethod? get paymentMethod; String? get paymentProvider;@StringishConverter() String? get paymentOrderCode; String? get paymentLinkId; String? get checkoutUrl; String? get qrCode; String? get paymentReference;@FlexibleDateTimeConverter() DateTime? get paymentExpiresAt; bool get inventoryReserved;@UserRefConverter() EntityRef<AppUser>? get createdBySalesId;@UserRefConverter() EntityRef<AppUser>? get approvedBySalesId;@UserRefConverter() EntityRef<AppUser>? get paidByManagerId;@UserRefConverter() EntityRef<AppUser>? get cancelledBy; String? get cancellationReason; List<StatusHistoryEntry> get statusHistory; DateTime? get paidAt; DateTime? get completedAt; DateTime? get cancelledAt; bool get isReviewed; DateTime? get createdAt; DateTime? get updatedAt;
 /// Create a copy of Order
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -897,7 +897,7 @@ abstract mixin class $OrderCopyWith<$Res>  {
   factory $OrderCopyWith(Order value, $Res Function(Order) _then) = _$OrderCopyWithImpl;
 @useResult
 $Res call({
-@JsonKey(name: '_id') String id, String orderCode, OrderChannel channel, FulfillmentType? fulfillmentType,@UserRefConverter() EntityRef<AppUser>? customerId, String? customerName, String? customerPhone, ShippingAddress? shippingAddress,@StoreRefConverter() EntityRef<Store>? storeId, List<OrderItem> items, int subtotal, int discountAmount, int shippingFee, int totalPrice, int pointsUsed, int pointsEarned, OrderStatus status, PaymentStatus paymentStatus, PaymentMethod? paymentMethod, String? paymentProvider,@StringishConverter() String? paymentOrderCode, String? paymentLinkId, String? checkoutUrl, String? qrCode, String? paymentReference,@FlexibleDateTimeConverter() DateTime? paymentExpiresAt, bool inventoryReserved,@UserRefConverter() EntityRef<AppUser>? createdBySalesId,@UserRefConverter() EntityRef<AppUser>? approvedBySalesId,@UserRefConverter() EntityRef<AppUser>? paidByManagerId,@UserRefConverter() EntityRef<AppUser>? cancelledBy, String? cancellationReason, List<StatusHistoryEntry> statusHistory, DateTime? paidAt, DateTime? completedAt, DateTime? cancelledAt, bool isReviewed, DateTime? createdAt, DateTime? updatedAt
+@JsonKey(name: '_id') String id, String orderCode,@JsonKey(readValue: readEnumValue) OrderChannel channel,@JsonKey(readValue: readEnumValue) FulfillmentType? fulfillmentType,@UserRefConverter() EntityRef<AppUser>? customerId, String? customerName, String? customerPhone, ShippingAddress? shippingAddress,@StoreRefConverter() EntityRef<Store>? storeId, List<OrderItem> items, int subtotal, int discountAmount, int shippingFee, int totalPrice, int pointsUsed, int pointsEarned,@JsonKey(readValue: readEnumValue) OrderStatus status,@JsonKey(readValue: readEnumValue) PaymentStatus paymentStatus,@JsonKey(readValue: readEnumValue) PaymentMethod? paymentMethod, String? paymentProvider,@StringishConverter() String? paymentOrderCode, String? paymentLinkId, String? checkoutUrl, String? qrCode, String? paymentReference,@FlexibleDateTimeConverter() DateTime? paymentExpiresAt, bool inventoryReserved,@UserRefConverter() EntityRef<AppUser>? createdBySalesId,@UserRefConverter() EntityRef<AppUser>? approvedBySalesId,@UserRefConverter() EntityRef<AppUser>? paidByManagerId,@UserRefConverter() EntityRef<AppUser>? cancelledBy, String? cancellationReason, List<StatusHistoryEntry> statusHistory, DateTime? paidAt, DateTime? completedAt, DateTime? cancelledAt, bool isReviewed, DateTime? createdAt, DateTime? updatedAt
 });
 
 
@@ -1052,7 +1052,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(name: '_id')  String id,  String orderCode,  OrderChannel channel,  FulfillmentType? fulfillmentType, @UserRefConverter()  EntityRef<AppUser>? customerId,  String? customerName,  String? customerPhone,  ShippingAddress? shippingAddress, @StoreRefConverter()  EntityRef<Store>? storeId,  List<OrderItem> items,  int subtotal,  int discountAmount,  int shippingFee,  int totalPrice,  int pointsUsed,  int pointsEarned,  OrderStatus status,  PaymentStatus paymentStatus,  PaymentMethod? paymentMethod,  String? paymentProvider, @StringishConverter()  String? paymentOrderCode,  String? paymentLinkId,  String? checkoutUrl,  String? qrCode,  String? paymentReference, @FlexibleDateTimeConverter()  DateTime? paymentExpiresAt,  bool inventoryReserved, @UserRefConverter()  EntityRef<AppUser>? createdBySalesId, @UserRefConverter()  EntityRef<AppUser>? approvedBySalesId, @UserRefConverter()  EntityRef<AppUser>? paidByManagerId, @UserRefConverter()  EntityRef<AppUser>? cancelledBy,  String? cancellationReason,  List<StatusHistoryEntry> statusHistory,  DateTime? paidAt,  DateTime? completedAt,  DateTime? cancelledAt,  bool isReviewed,  DateTime? createdAt,  DateTime? updatedAt)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(name: '_id')  String id,  String orderCode, @JsonKey(readValue: readEnumValue)  OrderChannel channel, @JsonKey(readValue: readEnumValue)  FulfillmentType? fulfillmentType, @UserRefConverter()  EntityRef<AppUser>? customerId,  String? customerName,  String? customerPhone,  ShippingAddress? shippingAddress, @StoreRefConverter()  EntityRef<Store>? storeId,  List<OrderItem> items,  int subtotal,  int discountAmount,  int shippingFee,  int totalPrice,  int pointsUsed,  int pointsEarned, @JsonKey(readValue: readEnumValue)  OrderStatus status, @JsonKey(readValue: readEnumValue)  PaymentStatus paymentStatus, @JsonKey(readValue: readEnumValue)  PaymentMethod? paymentMethod,  String? paymentProvider, @StringishConverter()  String? paymentOrderCode,  String? paymentLinkId,  String? checkoutUrl,  String? qrCode,  String? paymentReference, @FlexibleDateTimeConverter()  DateTime? paymentExpiresAt,  bool inventoryReserved, @UserRefConverter()  EntityRef<AppUser>? createdBySalesId, @UserRefConverter()  EntityRef<AppUser>? approvedBySalesId, @UserRefConverter()  EntityRef<AppUser>? paidByManagerId, @UserRefConverter()  EntityRef<AppUser>? cancelledBy,  String? cancellationReason,  List<StatusHistoryEntry> statusHistory,  DateTime? paidAt,  DateTime? completedAt,  DateTime? cancelledAt,  bool isReviewed,  DateTime? createdAt,  DateTime? updatedAt)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Order() when $default != null:
 return $default(_that.id,_that.orderCode,_that.channel,_that.fulfillmentType,_that.customerId,_that.customerName,_that.customerPhone,_that.shippingAddress,_that.storeId,_that.items,_that.subtotal,_that.discountAmount,_that.shippingFee,_that.totalPrice,_that.pointsUsed,_that.pointsEarned,_that.status,_that.paymentStatus,_that.paymentMethod,_that.paymentProvider,_that.paymentOrderCode,_that.paymentLinkId,_that.checkoutUrl,_that.qrCode,_that.paymentReference,_that.paymentExpiresAt,_that.inventoryReserved,_that.createdBySalesId,_that.approvedBySalesId,_that.paidByManagerId,_that.cancelledBy,_that.cancellationReason,_that.statusHistory,_that.paidAt,_that.completedAt,_that.cancelledAt,_that.isReviewed,_that.createdAt,_that.updatedAt);case _:
@@ -1073,7 +1073,7 @@ return $default(_that.id,_that.orderCode,_that.channel,_that.fulfillmentType,_th
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(name: '_id')  String id,  String orderCode,  OrderChannel channel,  FulfillmentType? fulfillmentType, @UserRefConverter()  EntityRef<AppUser>? customerId,  String? customerName,  String? customerPhone,  ShippingAddress? shippingAddress, @StoreRefConverter()  EntityRef<Store>? storeId,  List<OrderItem> items,  int subtotal,  int discountAmount,  int shippingFee,  int totalPrice,  int pointsUsed,  int pointsEarned,  OrderStatus status,  PaymentStatus paymentStatus,  PaymentMethod? paymentMethod,  String? paymentProvider, @StringishConverter()  String? paymentOrderCode,  String? paymentLinkId,  String? checkoutUrl,  String? qrCode,  String? paymentReference, @FlexibleDateTimeConverter()  DateTime? paymentExpiresAt,  bool inventoryReserved, @UserRefConverter()  EntityRef<AppUser>? createdBySalesId, @UserRefConverter()  EntityRef<AppUser>? approvedBySalesId, @UserRefConverter()  EntityRef<AppUser>? paidByManagerId, @UserRefConverter()  EntityRef<AppUser>? cancelledBy,  String? cancellationReason,  List<StatusHistoryEntry> statusHistory,  DateTime? paidAt,  DateTime? completedAt,  DateTime? cancelledAt,  bool isReviewed,  DateTime? createdAt,  DateTime? updatedAt)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(name: '_id')  String id,  String orderCode, @JsonKey(readValue: readEnumValue)  OrderChannel channel, @JsonKey(readValue: readEnumValue)  FulfillmentType? fulfillmentType, @UserRefConverter()  EntityRef<AppUser>? customerId,  String? customerName,  String? customerPhone,  ShippingAddress? shippingAddress, @StoreRefConverter()  EntityRef<Store>? storeId,  List<OrderItem> items,  int subtotal,  int discountAmount,  int shippingFee,  int totalPrice,  int pointsUsed,  int pointsEarned, @JsonKey(readValue: readEnumValue)  OrderStatus status, @JsonKey(readValue: readEnumValue)  PaymentStatus paymentStatus, @JsonKey(readValue: readEnumValue)  PaymentMethod? paymentMethod,  String? paymentProvider, @StringishConverter()  String? paymentOrderCode,  String? paymentLinkId,  String? checkoutUrl,  String? qrCode,  String? paymentReference, @FlexibleDateTimeConverter()  DateTime? paymentExpiresAt,  bool inventoryReserved, @UserRefConverter()  EntityRef<AppUser>? createdBySalesId, @UserRefConverter()  EntityRef<AppUser>? approvedBySalesId, @UserRefConverter()  EntityRef<AppUser>? paidByManagerId, @UserRefConverter()  EntityRef<AppUser>? cancelledBy,  String? cancellationReason,  List<StatusHistoryEntry> statusHistory,  DateTime? paidAt,  DateTime? completedAt,  DateTime? cancelledAt,  bool isReviewed,  DateTime? createdAt,  DateTime? updatedAt)  $default,) {final _that = this;
 switch (_that) {
 case _Order():
 return $default(_that.id,_that.orderCode,_that.channel,_that.fulfillmentType,_that.customerId,_that.customerName,_that.customerPhone,_that.shippingAddress,_that.storeId,_that.items,_that.subtotal,_that.discountAmount,_that.shippingFee,_that.totalPrice,_that.pointsUsed,_that.pointsEarned,_that.status,_that.paymentStatus,_that.paymentMethod,_that.paymentProvider,_that.paymentOrderCode,_that.paymentLinkId,_that.checkoutUrl,_that.qrCode,_that.paymentReference,_that.paymentExpiresAt,_that.inventoryReserved,_that.createdBySalesId,_that.approvedBySalesId,_that.paidByManagerId,_that.cancelledBy,_that.cancellationReason,_that.statusHistory,_that.paidAt,_that.completedAt,_that.cancelledAt,_that.isReviewed,_that.createdAt,_that.updatedAt);case _:
@@ -1093,7 +1093,7 @@ return $default(_that.id,_that.orderCode,_that.channel,_that.fulfillmentType,_th
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(name: '_id')  String id,  String orderCode,  OrderChannel channel,  FulfillmentType? fulfillmentType, @UserRefConverter()  EntityRef<AppUser>? customerId,  String? customerName,  String? customerPhone,  ShippingAddress? shippingAddress, @StoreRefConverter()  EntityRef<Store>? storeId,  List<OrderItem> items,  int subtotal,  int discountAmount,  int shippingFee,  int totalPrice,  int pointsUsed,  int pointsEarned,  OrderStatus status,  PaymentStatus paymentStatus,  PaymentMethod? paymentMethod,  String? paymentProvider, @StringishConverter()  String? paymentOrderCode,  String? paymentLinkId,  String? checkoutUrl,  String? qrCode,  String? paymentReference, @FlexibleDateTimeConverter()  DateTime? paymentExpiresAt,  bool inventoryReserved, @UserRefConverter()  EntityRef<AppUser>? createdBySalesId, @UserRefConverter()  EntityRef<AppUser>? approvedBySalesId, @UserRefConverter()  EntityRef<AppUser>? paidByManagerId, @UserRefConverter()  EntityRef<AppUser>? cancelledBy,  String? cancellationReason,  List<StatusHistoryEntry> statusHistory,  DateTime? paidAt,  DateTime? completedAt,  DateTime? cancelledAt,  bool isReviewed,  DateTime? createdAt,  DateTime? updatedAt)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(name: '_id')  String id,  String orderCode, @JsonKey(readValue: readEnumValue)  OrderChannel channel, @JsonKey(readValue: readEnumValue)  FulfillmentType? fulfillmentType, @UserRefConverter()  EntityRef<AppUser>? customerId,  String? customerName,  String? customerPhone,  ShippingAddress? shippingAddress, @StoreRefConverter()  EntityRef<Store>? storeId,  List<OrderItem> items,  int subtotal,  int discountAmount,  int shippingFee,  int totalPrice,  int pointsUsed,  int pointsEarned, @JsonKey(readValue: readEnumValue)  OrderStatus status, @JsonKey(readValue: readEnumValue)  PaymentStatus paymentStatus, @JsonKey(readValue: readEnumValue)  PaymentMethod? paymentMethod,  String? paymentProvider, @StringishConverter()  String? paymentOrderCode,  String? paymentLinkId,  String? checkoutUrl,  String? qrCode,  String? paymentReference, @FlexibleDateTimeConverter()  DateTime? paymentExpiresAt,  bool inventoryReserved, @UserRefConverter()  EntityRef<AppUser>? createdBySalesId, @UserRefConverter()  EntityRef<AppUser>? approvedBySalesId, @UserRefConverter()  EntityRef<AppUser>? paidByManagerId, @UserRefConverter()  EntityRef<AppUser>? cancelledBy,  String? cancellationReason,  List<StatusHistoryEntry> statusHistory,  DateTime? paidAt,  DateTime? completedAt,  DateTime? cancelledAt,  bool isReviewed,  DateTime? createdAt,  DateTime? updatedAt)?  $default,) {final _that = this;
 switch (_that) {
 case _Order() when $default != null:
 return $default(_that.id,_that.orderCode,_that.channel,_that.fulfillmentType,_that.customerId,_that.customerName,_that.customerPhone,_that.shippingAddress,_that.storeId,_that.items,_that.subtotal,_that.discountAmount,_that.shippingFee,_that.totalPrice,_that.pointsUsed,_that.pointsEarned,_that.status,_that.paymentStatus,_that.paymentMethod,_that.paymentProvider,_that.paymentOrderCode,_that.paymentLinkId,_that.checkoutUrl,_that.qrCode,_that.paymentReference,_that.paymentExpiresAt,_that.inventoryReserved,_that.createdBySalesId,_that.approvedBySalesId,_that.paidByManagerId,_that.cancelledBy,_that.cancellationReason,_that.statusHistory,_that.paidAt,_that.completedAt,_that.cancelledAt,_that.isReviewed,_that.createdAt,_that.updatedAt);case _:
@@ -1108,13 +1108,13 @@ return $default(_that.id,_that.orderCode,_that.channel,_that.fulfillmentType,_th
 @JsonSerializable()
 
 class _Order extends Order {
-  const _Order({@JsonKey(name: '_id') required this.id, this.orderCode = '', this.channel = OrderChannel.online, this.fulfillmentType, @UserRefConverter() this.customerId, this.customerName, this.customerPhone, this.shippingAddress, @StoreRefConverter() this.storeId,  List<OrderItem> items = const <OrderItem>[], this.subtotal = 0, this.discountAmount = 0, this.shippingFee = 0, this.totalPrice = 0, this.pointsUsed = 0, this.pointsEarned = 0, required this.status, this.paymentStatus = PaymentStatus.unpaid, this.paymentMethod, this.paymentProvider, @StringishConverter() this.paymentOrderCode, this.paymentLinkId, this.checkoutUrl, this.qrCode, this.paymentReference, @FlexibleDateTimeConverter() this.paymentExpiresAt, this.inventoryReserved = false, @UserRefConverter() this.createdBySalesId, @UserRefConverter() this.approvedBySalesId, @UserRefConverter() this.paidByManagerId, @UserRefConverter() this.cancelledBy, this.cancellationReason,  List<StatusHistoryEntry> statusHistory = const <StatusHistoryEntry>[], this.paidAt, this.completedAt, this.cancelledAt, this.isReviewed = false, this.createdAt, this.updatedAt}): _items = items,_statusHistory = statusHistory,super._();
+  const _Order({@JsonKey(name: '_id') required this.id, this.orderCode = '', @JsonKey(readValue: readEnumValue) this.channel = OrderChannel.online, @JsonKey(readValue: readEnumValue) this.fulfillmentType, @UserRefConverter() this.customerId, this.customerName, this.customerPhone, this.shippingAddress, @StoreRefConverter() this.storeId,  List<OrderItem> items = const <OrderItem>[], this.subtotal = 0, this.discountAmount = 0, this.shippingFee = 0, this.totalPrice = 0, this.pointsUsed = 0, this.pointsEarned = 0, @JsonKey(readValue: readEnumValue) required this.status, @JsonKey(readValue: readEnumValue) this.paymentStatus = PaymentStatus.unpaid, @JsonKey(readValue: readEnumValue) this.paymentMethod, this.paymentProvider, @StringishConverter() this.paymentOrderCode, this.paymentLinkId, this.checkoutUrl, this.qrCode, this.paymentReference, @FlexibleDateTimeConverter() this.paymentExpiresAt, this.inventoryReserved = false, @UserRefConverter() this.createdBySalesId, @UserRefConverter() this.approvedBySalesId, @UserRefConverter() this.paidByManagerId, @UserRefConverter() this.cancelledBy, this.cancellationReason,  List<StatusHistoryEntry> statusHistory = const <StatusHistoryEntry>[], this.paidAt, this.completedAt, this.cancelledAt, this.isReviewed = false, this.createdAt, this.updatedAt}): _items = items,_statusHistory = statusHistory,super._();
   factory _Order.fromJson(Map<String, dynamic> json) => _$OrderFromJson(json);
 
 @override@JsonKey(name: '_id') final  String id;
 @override@JsonKey() final  String orderCode;
-@override@JsonKey() final  OrderChannel channel;
-@override final  FulfillmentType? fulfillmentType;
+@override@JsonKey(readValue: readEnumValue) final  OrderChannel channel;
+@override@JsonKey(readValue: readEnumValue) final  FulfillmentType? fulfillmentType;
 @override@UserRefConverter() final  EntityRef<AppUser>? customerId;
 @override final  String? customerName;
 @override final  String? customerPhone;
@@ -1133,9 +1133,9 @@ class _Order extends Order {
 @override@JsonKey() final  int totalPrice;
 @override@JsonKey() final  int pointsUsed;
 @override@JsonKey() final  int pointsEarned;
-@override final  OrderStatus status;
-@override@JsonKey() final  PaymentStatus paymentStatus;
-@override final  PaymentMethod? paymentMethod;
+@override@JsonKey(readValue: readEnumValue) final  OrderStatus status;
+@override@JsonKey(readValue: readEnumValue) final  PaymentStatus paymentStatus;
+@override@JsonKey(readValue: readEnumValue) final  PaymentMethod? paymentMethod;
 @override final  String? paymentProvider;
 @override@StringishConverter() final  String? paymentOrderCode;
 @override final  String? paymentLinkId;
@@ -1198,7 +1198,7 @@ abstract mixin class _$OrderCopyWith<$Res> implements $OrderCopyWith<$Res> {
   factory _$OrderCopyWith(_Order value, $Res Function(_Order) _then) = __$OrderCopyWithImpl;
 @override @useResult
 $Res call({
-@JsonKey(name: '_id') String id, String orderCode, OrderChannel channel, FulfillmentType? fulfillmentType,@UserRefConverter() EntityRef<AppUser>? customerId, String? customerName, String? customerPhone, ShippingAddress? shippingAddress,@StoreRefConverter() EntityRef<Store>? storeId, List<OrderItem> items, int subtotal, int discountAmount, int shippingFee, int totalPrice, int pointsUsed, int pointsEarned, OrderStatus status, PaymentStatus paymentStatus, PaymentMethod? paymentMethod, String? paymentProvider,@StringishConverter() String? paymentOrderCode, String? paymentLinkId, String? checkoutUrl, String? qrCode, String? paymentReference,@FlexibleDateTimeConverter() DateTime? paymentExpiresAt, bool inventoryReserved,@UserRefConverter() EntityRef<AppUser>? createdBySalesId,@UserRefConverter() EntityRef<AppUser>? approvedBySalesId,@UserRefConverter() EntityRef<AppUser>? paidByManagerId,@UserRefConverter() EntityRef<AppUser>? cancelledBy, String? cancellationReason, List<StatusHistoryEntry> statusHistory, DateTime? paidAt, DateTime? completedAt, DateTime? cancelledAt, bool isReviewed, DateTime? createdAt, DateTime? updatedAt
+@JsonKey(name: '_id') String id, String orderCode,@JsonKey(readValue: readEnumValue) OrderChannel channel,@JsonKey(readValue: readEnumValue) FulfillmentType? fulfillmentType,@UserRefConverter() EntityRef<AppUser>? customerId, String? customerName, String? customerPhone, ShippingAddress? shippingAddress,@StoreRefConverter() EntityRef<Store>? storeId, List<OrderItem> items, int subtotal, int discountAmount, int shippingFee, int totalPrice, int pointsUsed, int pointsEarned,@JsonKey(readValue: readEnumValue) OrderStatus status,@JsonKey(readValue: readEnumValue) PaymentStatus paymentStatus,@JsonKey(readValue: readEnumValue) PaymentMethod? paymentMethod, String? paymentProvider,@StringishConverter() String? paymentOrderCode, String? paymentLinkId, String? checkoutUrl, String? qrCode, String? paymentReference,@FlexibleDateTimeConverter() DateTime? paymentExpiresAt, bool inventoryReserved,@UserRefConverter() EntityRef<AppUser>? createdBySalesId,@UserRefConverter() EntityRef<AppUser>? approvedBySalesId,@UserRefConverter() EntityRef<AppUser>? paidByManagerId,@UserRefConverter() EntityRef<AppUser>? cancelledBy, String? cancellationReason, List<StatusHistoryEntry> statusHistory, DateTime? paidAt, DateTime? completedAt, DateTime? cancelledAt, bool isReviewed, DateTime? createdAt, DateTime? updatedAt
 });
 
 

@@ -11,6 +11,9 @@ enum OrderTab {
   pending('Chờ xác nhận'),
   processing('Đang xử lý'),
   completed('Hoàn tất'),
+
+  /// Một phần của "Hoàn tất": đơn hoàn tất chưa đánh giá.
+  toReview('Chờ đánh giá'),
   cancelled('Đã hủy');
 
   const OrderTab(this.label);
@@ -21,6 +24,7 @@ enum OrderTab {
     all => true,
     pending => order.status == OrderStatus.pending,
     completed => order.status == OrderStatus.completed,
+    toReview => order.canReview,
     cancelled => order.status == OrderStatus.cancelled,
     processing => order.status != OrderStatus.pending && !order.status.isFinal,
   };
@@ -67,6 +71,14 @@ extension CustomerOrderDisplay on Order {
       channel == OrderChannel.online &&
       status == OrderStatus.pending &&
       !isPaid;
+
+  /// Đơn hoàn tất chưa đánh giá (mỗi đơn được đánh giá một lần).
+  bool get canReview =>
+      status == OrderStatus.completed && !isReviewed && items.isNotEmpty;
+
+  /// Backend gắn đánh giá của đơn vào sản phẩm đầu tiên.
+  String? get reviewedProductId =>
+      items.isEmpty ? null : items.first.productId.id;
 
   String get paymentMethodLabel => switch (paymentMethod) {
     PaymentMethod.cod =>

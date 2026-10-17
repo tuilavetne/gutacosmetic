@@ -152,6 +152,10 @@ const _messages = <String, String>{
   'INVALID_RATING': 'Số sao phải từ 1 đến 5.',
   'MISSING_FIELDS': 'Vui lòng chọn số sao và nhập bình luận.',
   'NO_PRODUCT': 'Đơn hàng không có sản phẩm.',
+  'INVALID_ID': 'Mã đơn hàng hoặc đánh giá không hợp lệ.',
+  // Lỗi của multer khi upload ảnh đánh giá.
+  'LIMIT_FILE_SIZE': 'Mỗi ảnh tối đa 5 MB.',
+  'LIMIT_UNEXPECTED_FILE': 'Mỗi đánh giá tối đa 5 ảnh.',
 
   // ---- Owner ----
   'STAFF_NOT_FOUND': 'Không tìm thấy nhân viên.',

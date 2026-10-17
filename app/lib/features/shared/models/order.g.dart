@@ -43,7 +43,7 @@ Map<String, dynamic> _$OrderItemToJson(_OrderItem instance) =>
 
 _StatusHistoryEntry _$StatusHistoryEntryFromJson(Map<String, dynamic> json) =>
     _StatusHistoryEntry(
-      status: $enumDecode(_$OrderStatusEnumMap, json['status']),
+      status: $enumDecode(_$OrderStatusEnumMap, readEnumValue(json, 'status')),
       changedBy: _$JsonConverterFromJson<Object, EntityRef<AppUser>>(
         json['changedBy'],
         const UserRefConverter().fromJson,
@@ -91,11 +91,14 @@ _Order _$OrderFromJson(Map<String, dynamic> json) => _Order(
   id: json['_id'] as String,
   orderCode: json['orderCode'] as String? ?? '',
   channel:
-      $enumDecodeNullable(_$OrderChannelEnumMap, json['channel']) ??
+      $enumDecodeNullable(
+        _$OrderChannelEnumMap,
+        readEnumValue(json, 'channel'),
+      ) ??
       OrderChannel.online,
   fulfillmentType: $enumDecodeNullable(
     _$FulfillmentTypeEnumMap,
-    json['fulfillmentType'],
+    readEnumValue(json, 'fulfillmentType'),
   ),
   customerId: _$JsonConverterFromJson<Object, EntityRef<AppUser>>(
     json['customerId'],
@@ -123,13 +126,16 @@ _Order _$OrderFromJson(Map<String, dynamic> json) => _Order(
   totalPrice: (json['totalPrice'] as num?)?.toInt() ?? 0,
   pointsUsed: (json['pointsUsed'] as num?)?.toInt() ?? 0,
   pointsEarned: (json['pointsEarned'] as num?)?.toInt() ?? 0,
-  status: $enumDecode(_$OrderStatusEnumMap, json['status']),
+  status: $enumDecode(_$OrderStatusEnumMap, readEnumValue(json, 'status')),
   paymentStatus:
-      $enumDecodeNullable(_$PaymentStatusEnumMap, json['paymentStatus']) ??
+      $enumDecodeNullable(
+        _$PaymentStatusEnumMap,
+        readEnumValue(json, 'paymentStatus'),
+      ) ??
       PaymentStatus.unpaid,
   paymentMethod: $enumDecodeNullable(
     _$PaymentMethodEnumMap,
-    json['paymentMethod'],
+    readEnumValue(json, 'paymentMethod'),
   ),
   paymentProvider: json['paymentProvider'] as String?,
   paymentOrderCode: _$JsonConverterFromJson<Object, String>(

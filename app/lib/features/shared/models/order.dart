@@ -41,7 +41,7 @@ abstract class OrderItem with _$OrderItem {
 @freezed
 abstract class StatusHistoryEntry with _$StatusHistoryEntry {
   const factory StatusHistoryEntry({
-    required OrderStatus status,
+    @JsonKey(readValue: readEnumValue) required OrderStatus status,
     @UserRefConverter() EntityRef<AppUser>? changedBy,
     String? note,
     DateTime? changedAt,
@@ -58,8 +58,10 @@ abstract class Order with _$Order {
   const factory Order({
     @JsonKey(name: '_id') required String id,
     @Default('') String orderCode,
-    @Default(OrderChannel.online) OrderChannel channel,
-    FulfillmentType? fulfillmentType,
+    @JsonKey(readValue: readEnumValue)
+    @Default(OrderChannel.online)
+    OrderChannel channel,
+    @JsonKey(readValue: readEnumValue) FulfillmentType? fulfillmentType,
 
     // Khách hàng — `customerId` null với khách vãng lai.
     @UserRefConverter() EntityRef<AppUser>? customerId,
@@ -80,9 +82,11 @@ abstract class Order with _$Order {
     @Default(0) int pointsEarned,
 
     // Trạng thái và thanh toán
-    required OrderStatus status,
-    @Default(PaymentStatus.unpaid) PaymentStatus paymentStatus,
-    PaymentMethod? paymentMethod,
+    @JsonKey(readValue: readEnumValue) required OrderStatus status,
+    @JsonKey(readValue: readEnumValue)
+    @Default(PaymentStatus.unpaid)
+    PaymentStatus paymentStatus,
+    @JsonKey(readValue: readEnumValue) PaymentMethod? paymentMethod,
 
     // PayOS
     String? paymentProvider,

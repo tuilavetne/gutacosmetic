@@ -8,7 +8,10 @@ import '../../../core/widgets/app_messenger.dart';
 import '../../../core/widgets/confirm_dialog.dart';
 import '../../shared/models/models.dart';
 import '../cart/cart_controller.dart';
+import '../catalog/product_reviews_controller.dart';
 import '../data/order_repository.dart';
+import '../data/product_repository.dart';
+import '../data/review_repository.dart';
 import 'order_display.dart';
 
 /// Hành động của khách trên một đơn (dùng chung cho thẻ đơn và màn chi tiết).
@@ -64,6 +67,27 @@ class OrderActions {
 
   bool get canReorder => order.status.isFinal && order.reorderLines.isNotEmpty;
 
+  /// Mở màn viết (hoặc sửa, nếu đã có) đánh giá của đơn.
+  Future<void> review() async {
+    await context.push(AppRoutes.customerOrderReview(order.id));
+  }
+
+  Future<void> deleteReview(Review review) async {
+    final ok = await showConfirmDialog(
+      context,
+      title: 'Xóa đánh giá',
+      message:
+          'Xóa đánh giá của đơn ${order.orderCode}? Bạn có thể viết lại '
+          'đánh giá sau.',
+      confirmLabel: 'Xóa',
+      destructive: true,
+    );
+    if (!ok) return;
+    await ref.read(reviewRepositoryProvider).deleteReview(review.id);
+    if (context.mounted) invalidateReviewCaches(ref, order, review);
+    showAppSnackBar('Đã xóa đánh giá.');
+  }
+
   /// Nút chính trên thẻ đơn (tối đa một nút).
   List<Widget> compactButtons() => [
     if (order.awaitsBankTransfer)
@@ -75,6 +99,8 @@ class OrderActions {
         variant: AppButtonVariant.outlined,
         onPressed: cancel,
       )
+    else if (order.canReview)
+      AppButton(expand: false, label: 'Đánh giá', onPressed: review)
     else if (canReorder)
       AppButton(
         expand: false,
@@ -83,4 +109,20 @@ class OrderActions {
         onPressed: () async => reorder(),
       ),
   ];
+}
+
+/// Tải lại mọi nơi hiển thị đánh giá của [order] sau khi tạo/sửa/xóa: danh
+/// sách đơn, chi tiết đơn, đánh giá của đơn và trang sản phẩm được đánh giá
+/// (điểm trung bình đổi theo).
+void invalidateReviewCaches(WidgetRef ref, Order order, [Review? review]) {
+  ref
+    ..invalidate(customerOrdersProvider)
+    ..invalidate(customerOrderProvider(order.id))
+    ..invalidate(orderReviewProvider(order.id));
+  final productId = review?.productId?.id ?? order.reviewedProductId;
+  if (productId != null && productId.isNotEmpty) {
+    ref
+      ..invalidate(productReviewsProvider(productId))
+      ..invalidate(productDetailProvider(productId));
+  }
 }

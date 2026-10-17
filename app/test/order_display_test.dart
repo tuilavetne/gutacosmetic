@@ -31,11 +31,13 @@ Order _order({
 );
 
 void main() {
-  test('mỗi đơn thuộc đúng một tab ngoài "Tất cả"', () {
+  test('mỗi đơn thuộc đúng một tab trạng thái ngoài "Tất cả"', () {
+    // "Chờ đánh giá" là tập con của "Hoàn tất" nên không tính.
+    const subsets = {OrderTab.all, OrderTab.toReview};
     for (final status in OrderStatus.values) {
       final order = _order(status: status);
       final tabs = OrderTab.values
-          .where((t) => t != OrderTab.all && t.matches(order))
+          .where((t) => !subsets.contains(t) && t.matches(order))
           .toList();
       expect(tabs, hasLength(1), reason: '$status');
       expect(OrderTab.all.matches(order), isTrue);
@@ -48,6 +50,21 @@ void main() {
       OrderTab.processing.matches(_order(status: OrderStatus.readyForPickup)),
       isTrue,
     );
+  });
+
+  test('"Chờ đánh giá": đơn hoàn tất chưa đánh giá', () {
+    final done = _order(status: OrderStatus.completed);
+    expect(done.canReview, isTrue);
+    expect(OrderTab.toReview.matches(done), isTrue);
+    expect(done.reviewedProductId, 'p1');
+
+    final reviewed = done.copyWith(isReviewed: true);
+    expect(reviewed.canReview, isFalse);
+    expect(OrderTab.toReview.matches(reviewed), isFalse);
+    expect(OrderTab.completed.matches(reviewed), isTrue);
+
+    expect(_order().canReview, isFalse);
+    expect(_order(status: OrderStatus.cancelled).canReview, isFalse);
   });
 
   test('nhãn trạng thái theo hình thức nhận và thanh toán', () {
