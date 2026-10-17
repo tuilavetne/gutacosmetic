@@ -70,6 +70,31 @@ class _CustomerAccountScreenState extends ConsumerState<CustomerAccountScreen> {
                   user: user,
                   onEdit: () => context.push(AppRoutes.customerEditProfile),
                 ),
+                const SizedBox(height: 16),
+                Card(
+                  child: ListTile(
+                    leading: const Icon(
+                      Icons.lock_outline,
+                      color: AppColors.primary,
+                    ),
+                    title: Text(
+                      user.authProvider == AuthProvider.google
+                          ? 'Mật khẩu đăng nhập'
+                          : 'Đổi mật khẩu',
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    subtitle: user.authProvider == AuthProvider.google
+                        ? const Text(
+                            'Đặt hoặc đổi mật khẩu cho tài khoản Google',
+                          )
+                        : null,
+                    trailing: const Icon(Icons.chevron_right),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppRadius.md),
+                    ),
+                    onTap: () => context.push(AppRoutes.customerChangePassword),
+                  ),
+                ),
                 const SizedBox(height: 24),
                 SizedBox(
                   height: 52,

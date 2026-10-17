@@ -8,6 +8,7 @@ import '../features/auth/presentation/login_screen.dart';
 import '../features/auth/presentation/register_screen.dart';
 import '../features/customer/presentation/account_screen.dart';
 import '../features/customer/presentation/cart_screen.dart';
+import '../features/customer/presentation/change_password_screen.dart';
 import '../features/customer/presentation/category_screen.dart';
 import '../features/customer/presentation/checkout_screen.dart';
 import '../features/customer/presentation/customer_shell.dart';
@@ -29,12 +30,18 @@ final _rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'root');
 
 final routerProvider = Provider<GoRouter>((ref) {
   // Chỉ những thay đổi ảnh hưởng tới điều hướng mới kích hoạt redirect
-  // (cập nhật điểm thành viên thì không).
+  // (cập nhật điểm thành viên hay thay token sau khi đổi mật khẩu thì không —
+  // refresh giữa lúc `pop()` sẽ dựng lại trang vừa đóng).
   final refresh = ValueNotifier<Object?>(null);
   ref.listen(
     sessionControllerProvider.select(
-      (s) =>
-          (s.isRestoring, s.token, s.user?.id, s.user?.role, s.activeStore?.id),
+      (s) => (
+        s.isRestoring,
+        s.token != null,
+        s.user?.id,
+        s.user?.role,
+        s.activeStore?.id,
+      ),
     ),
     (_, next) => refresh.value = next,
   );
@@ -163,6 +170,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.customerEditProfile,
         builder: (context, state) => const EditProfileScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.customerChangePassword,
+        builder: (context, state) => const ChangePasswordScreen(),
       ),
       GoRoute(
         path: AppRoutes.customerProductPattern,

@@ -32,6 +32,7 @@ abstract final class AppRoutes {
   static String customerOrderReview(String id) => '/customer/orders/$id/review';
   static const customerWishlist = '/customer/wishlist';
   static const customerEditProfile = '/customer/profile/edit';
+  static const customerChangePassword = '/customer/profile/password';
   static const customerProductPattern = '/customer/products/:id';
   static String customerProduct(String id) => '/customer/products/$id';
 

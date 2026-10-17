@@ -102,6 +102,25 @@ class AuthRepository {
     return json['message'] as String? ?? 'Đổi mật khẩu thành công.';
   }
 
+  /// `PUT /auth/password` — đổi mật khẩu khi đã đăng nhập. Tài khoản chưa có
+  /// mật khẩu (tạo bằng Google) thì bỏ [currentPassword]. Trả về token mới:
+  /// mọi token cũ, kể cả trên thiết bị khác, hết hiệu lực.
+  Future<AuthResult> changePassword({
+    String? currentPassword,
+    required String newPassword,
+    required String confirmPassword,
+  }) async {
+    final json = await _api.put(
+      '/auth/password',
+      data: {
+        'currentPassword': ?currentPassword,
+        'newPassword': newPassword,
+        'confirmPassword': confirmPassword,
+      },
+    );
+    return AuthResult.fromJson(json);
+  }
+
   Future<AppUser> me() async {
     final json = await _api.get('/auth/me');
     return AppUser.fromJson(requireObject(json, 'user'));

@@ -67,7 +67,17 @@ const resetPassword = async (req, res, next) => {
   }
 };
 
+const changePassword = async (req, res, next) => {
+  try {
+    const result = await authService.changePassword(req.user._id, req.body);
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
+  changePassword,
   login,
   loginWithGoogle,
   me,

@@ -33,6 +33,9 @@ const _messages = <String, String>{
   'WEAK_PASSWORD':
       'Mật khẩu dài 8–72 ký tự, gồm chữ hoa, chữ thường và chữ số.',
   'PASSWORD_MISMATCH': 'Mật khẩu xác nhận không khớp.',
+  'CURRENT_PASSWORD_REQUIRED': 'Vui lòng nhập mật khẩu hiện tại.',
+  'INVALID_CURRENT_PASSWORD': 'Mật khẩu hiện tại không đúng.',
+  'SAME_PASSWORD': 'Mật khẩu mới phải khác mật khẩu hiện tại.',
   'VALIDATION_ERROR': 'Vui lòng điền đầy đủ thông tin bắt buộc.',
 
   // ---- Ảnh đại diện ----

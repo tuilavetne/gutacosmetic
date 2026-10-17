@@ -367,9 +367,77 @@ const resetPassword = async ({ resetToken, password, confirmPassword }) => {
   });
 };
 
+/**
+ * Đổi mật khẩu khi đã đăng nhập. Tài khoản chưa có mật khẩu (tạo bằng Google)
+ * được đặt mật khẩu lần đầu mà không cần mật khẩu hiện tại.
+ *
+ * `passwordChangedAt` làm mọi token cũ hết hiệu lực (authMiddleware), nên trả
+ * về token mới cho thiết bị đang đổi.
+ */
+const changePassword = async (
+  userId,
+  { currentPassword, newPassword, confirmPassword }
+) => {
+  const user = await User.findById(userId).select("+password");
+
+  if (!user) {
+    throw new AppError("Account was not found", 404, "ACCOUNT_NOT_FOUND");
+  }
+
+  if (user.password) {
+    if (typeof currentPassword !== "string" || currentPassword.length === 0) {
+      throw new AppError(
+        "Current password is required",
+        400,
+        "CURRENT_PASSWORD_REQUIRED",
+        { field: "currentPassword" }
+      );
+    }
+
+    if (!(await user.comparePassword(currentPassword))) {
+      throw new AppError(
+        "Current password is incorrect",
+        400,
+        "INVALID_CURRENT_PASSWORD",
+        { field: "currentPassword" }
+      );
+    }
+  }
+
+  const nextPassword = validatePassword(newPassword);
+
+  if (confirmPassword !== nextPassword) {
+    throw new AppError(
+      "Password confirmation does not match",
+      400,
+      "PASSWORD_MISMATCH",
+      { field: "confirmPassword" }
+    );
+  }
+
+  if (user.password && (await user.comparePassword(nextPassword))) {
+    throw new AppError(
+      "New password must be different from the current password",
+      400,
+      "SAME_PASSWORD",
+      { field: "newPassword" }
+    );
+  }
+
+  user.password = nextPassword;
+  user.passwordChangedAt = new Date();
+  await user.save();
+
+  return {
+    message: "Password has been changed successfully",
+    ...createAuthResponse(user),
+  };
+};
+
 const getUserById = (userId) => User.findById(userId).select(publicUserFields);
 
 module.exports = {
+  changePassword,
   getUserById,
   login,
   loginWithGoogle,
