@@ -18,6 +18,36 @@ const updateProfile = async (req, res, next) => {
   }
 };
 
+const checkPhoneAvailable = async (req, res, next) => {
+  try {
+    const result = await userService.checkPhoneAvailable(
+      req.user._id,
+      req.query.phone
+    );
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+};
+
+const updateAvatar = async (req, res, next) => {
+  try {
+    const user = await userService.updateAvatar(req.user._id, req.file);
+    res.json({ user });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const removeAvatar = async (req, res, next) => {
+  try {
+    const user = await userService.removeAvatar(req.user._id);
+    res.json({ user });
+  } catch (error) {
+    next(error);
+  }
+};
+
 const redeemCustomerPoints = async (req, res, next) => {
   try {
     const result = await userService.redeemCustomerPoints({
@@ -34,6 +64,9 @@ const redeemCustomerPoints = async (req, res, next) => {
 };
 
 module.exports = {
+  checkPhoneAvailable,
+  removeAvatar,
+  updateAvatar,
   redeemCustomerPoints,
   searchCustomers,
   updateProfile,

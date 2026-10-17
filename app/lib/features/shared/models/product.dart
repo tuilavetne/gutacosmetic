@@ -45,6 +45,10 @@ abstract class Product with _$Product {
     /// Chỉ có ở `GET /products/:id`.
     double? rating,
     int? reviewCount,
+
+    /// Số đánh giá theo mức sao, khóa `"1"`…`"5"` — chỉ có ở
+    /// `GET /products/:id`.
+    @Default(<String, int>{}) Map<String, int> ratingBreakdown,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) = _Product;

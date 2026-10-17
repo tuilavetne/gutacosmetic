@@ -160,3 +160,28 @@ class RefreshableFill extends StatelessWidget {
     );
   }
 }
+
+/// Lỗi tải một phần của màn hình (không chiếm cả trang), kèm nút thử lại.
+class InlineError extends StatelessWidget {
+  const InlineError({super.key, required this.message, required this.onRetry});
+
+  final String message;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        const Icon(Icons.error_outline, color: AppColors.accent, size: 20),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            message,
+            style: const TextStyle(color: AppColors.muted, fontSize: 13),
+          ),
+        ),
+        TextButton(onPressed: onRetry, child: const Text('Thử lại')),
+      ],
+    );
+  }
+}

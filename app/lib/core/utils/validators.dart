@@ -15,6 +15,19 @@ abstract final class Validators {
   static String normalizePhone(String value) =>
       value.replaceAll(_phoneNoise, '');
 
+  /// Dạng backend lưu: `0912 345 678` → `+84912345678` (giống
+  /// `normalizePhone` của backend). Dùng để so sánh SĐT đã đổi hay chưa.
+  static String canonicalPhone(String value) {
+    final phone = normalizePhone(value.trim());
+    return phone.startsWith('0') ? '+84${phone.substring(1)}' : phone;
+  }
+
+  /// Dạng quen thuộc để hiện trong ô nhập: `+84912345678` → `0912345678`.
+  static String localPhone(String? value) {
+    final phone = normalizePhone(value?.trim() ?? '');
+    return phone.startsWith('+84') ? '0${phone.substring(3)}' : phone;
+  }
+
   static String normalizeEmail(String value) => value.trim().toLowerCase();
 
   static bool isGmail(String value) => _gmail.hasMatch(value.trim());

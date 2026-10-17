@@ -47,6 +47,11 @@ _Product _$ProductFromJson(Map<String, dynamic> json) => _Product(
   isActive: json['isActive'] as bool? ?? true,
   rating: (json['rating'] as num?)?.toDouble(),
   reviewCount: (json['reviewCount'] as num?)?.toInt(),
+  ratingBreakdown:
+      (json['ratingBreakdown'] as Map<String, dynamic>?)?.map(
+        (k, e) => MapEntry(k, (e as num).toInt()),
+      ) ??
+      const <String, int>{},
   createdAt: json['createdAt'] == null
       ? null
       : DateTime.parse(json['createdAt'] as String),
@@ -75,6 +80,7 @@ Map<String, dynamic> _$ProductToJson(_Product instance) => <String, dynamic>{
   'isActive': instance.isActive,
   'rating': ?instance.rating,
   'reviewCount': ?instance.reviewCount,
+  'ratingBreakdown': instance.ratingBreakdown,
   'createdAt': ?instance.createdAt?.toIso8601String(),
   'updatedAt': ?instance.updatedAt?.toIso8601String(),
 };

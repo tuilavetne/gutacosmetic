@@ -296,7 +296,9 @@ mixin _$Product {
 
 @JsonKey(name: '_id') String get id; String get sku; String get name; String get brand; int get price; int? get costPrice; int? get originalPrice; String? get description; String? get image; List<String> get images; String? get category; List<String> get skinTypes; String? get volume; String? get origin;/// Chuỗi mô tả, ví dụ "36 tháng kể từ NSX".
  String? get expiryDate; List<Ingredient> get ingredients; bool get isActive;/// Chỉ có ở `GET /products/:id`.
- double? get rating; int? get reviewCount; DateTime? get createdAt; DateTime? get updatedAt;
+ double? get rating; int? get reviewCount;/// Số đánh giá theo mức sao, khóa `"1"`…`"5"` — chỉ có ở
+/// `GET /products/:id`.
+ Map<String, int> get ratingBreakdown; DateTime? get createdAt; DateTime? get updatedAt;
 /// Create a copy of Product
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -310,20 +312,20 @@ $ProductCopyWith<Product> get copyWith => _$ProductCopyWithImpl<Product>(this as
 @override
 bool operator ==(Object other) {
   final _this = this as Product;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Product&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.sku, _this.sku) || other.sku == _this.sku)&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.brand, _this.brand) || other.brand == _this.brand)&&(identical(other.price, _this.price) || other.price == _this.price)&&(identical(other.costPrice, _this.costPrice) || other.costPrice == _this.costPrice)&&(identical(other.originalPrice, _this.originalPrice) || other.originalPrice == _this.originalPrice)&&(identical(other.description, _this.description) || other.description == _this.description)&&(identical(other.image, _this.image) || other.image == _this.image)&&const DeepCollectionEquality().equals(other.images, _this.images)&&(identical(other.category, _this.category) || other.category == _this.category)&&const DeepCollectionEquality().equals(other.skinTypes, _this.skinTypes)&&(identical(other.volume, _this.volume) || other.volume == _this.volume)&&(identical(other.origin, _this.origin) || other.origin == _this.origin)&&(identical(other.expiryDate, _this.expiryDate) || other.expiryDate == _this.expiryDate)&&const DeepCollectionEquality().equals(other.ingredients, _this.ingredients)&&(identical(other.isActive, _this.isActive) || other.isActive == _this.isActive)&&(identical(other.rating, _this.rating) || other.rating == _this.rating)&&(identical(other.reviewCount, _this.reviewCount) || other.reviewCount == _this.reviewCount)&&(identical(other.createdAt, _this.createdAt) || other.createdAt == _this.createdAt)&&(identical(other.updatedAt, _this.updatedAt) || other.updatedAt == _this.updatedAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Product&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.sku, _this.sku) || other.sku == _this.sku)&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.brand, _this.brand) || other.brand == _this.brand)&&(identical(other.price, _this.price) || other.price == _this.price)&&(identical(other.costPrice, _this.costPrice) || other.costPrice == _this.costPrice)&&(identical(other.originalPrice, _this.originalPrice) || other.originalPrice == _this.originalPrice)&&(identical(other.description, _this.description) || other.description == _this.description)&&(identical(other.image, _this.image) || other.image == _this.image)&&const DeepCollectionEquality().equals(other.images, _this.images)&&(identical(other.category, _this.category) || other.category == _this.category)&&const DeepCollectionEquality().equals(other.skinTypes, _this.skinTypes)&&(identical(other.volume, _this.volume) || other.volume == _this.volume)&&(identical(other.origin, _this.origin) || other.origin == _this.origin)&&(identical(other.expiryDate, _this.expiryDate) || other.expiryDate == _this.expiryDate)&&const DeepCollectionEquality().equals(other.ingredients, _this.ingredients)&&(identical(other.isActive, _this.isActive) || other.isActive == _this.isActive)&&(identical(other.rating, _this.rating) || other.rating == _this.rating)&&(identical(other.reviewCount, _this.reviewCount) || other.reviewCount == _this.reviewCount)&&const DeepCollectionEquality().equals(other.ratingBreakdown, _this.ratingBreakdown)&&(identical(other.createdAt, _this.createdAt) || other.createdAt == _this.createdAt)&&(identical(other.updatedAt, _this.updatedAt) || other.updatedAt == _this.updatedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as Product;
-  return Object.hashAll([runtimeType,_this.id,_this.sku,_this.name,_this.brand,_this.price,_this.costPrice,_this.originalPrice,_this.description,_this.image,const DeepCollectionEquality().hash(_this.images),_this.category,const DeepCollectionEquality().hash(_this.skinTypes),_this.volume,_this.origin,_this.expiryDate,const DeepCollectionEquality().hash(_this.ingredients),_this.isActive,_this.rating,_this.reviewCount,_this.createdAt,_this.updatedAt]);
+  return Object.hashAll([runtimeType,_this.id,_this.sku,_this.name,_this.brand,_this.price,_this.costPrice,_this.originalPrice,_this.description,_this.image,const DeepCollectionEquality().hash(_this.images),_this.category,const DeepCollectionEquality().hash(_this.skinTypes),_this.volume,_this.origin,_this.expiryDate,const DeepCollectionEquality().hash(_this.ingredients),_this.isActive,_this.rating,_this.reviewCount,const DeepCollectionEquality().hash(_this.ratingBreakdown),_this.createdAt,_this.updatedAt]);
 }
 
 @override
 String toString() {
   final _this = this as Product;
-  return 'Product(id: ${_this.id}, sku: ${_this.sku}, name: ${_this.name}, brand: ${_this.brand}, price: ${_this.price}, costPrice: ${_this.costPrice}, originalPrice: ${_this.originalPrice}, description: ${_this.description}, image: ${_this.image}, images: ${_this.images}, category: ${_this.category}, skinTypes: ${_this.skinTypes}, volume: ${_this.volume}, origin: ${_this.origin}, expiryDate: ${_this.expiryDate}, ingredients: ${_this.ingredients}, isActive: ${_this.isActive}, rating: ${_this.rating}, reviewCount: ${_this.reviewCount}, createdAt: ${_this.createdAt}, updatedAt: ${_this.updatedAt})';
+  return 'Product(id: ${_this.id}, sku: ${_this.sku}, name: ${_this.name}, brand: ${_this.brand}, price: ${_this.price}, costPrice: ${_this.costPrice}, originalPrice: ${_this.originalPrice}, description: ${_this.description}, image: ${_this.image}, images: ${_this.images}, category: ${_this.category}, skinTypes: ${_this.skinTypes}, volume: ${_this.volume}, origin: ${_this.origin}, expiryDate: ${_this.expiryDate}, ingredients: ${_this.ingredients}, isActive: ${_this.isActive}, rating: ${_this.rating}, reviewCount: ${_this.reviewCount}, ratingBreakdown: ${_this.ratingBreakdown}, createdAt: ${_this.createdAt}, updatedAt: ${_this.updatedAt})';
 }
 
 
@@ -334,7 +336,7 @@ abstract mixin class $ProductCopyWith<$Res>  {
   factory $ProductCopyWith(Product value, $Res Function(Product) _then) = _$ProductCopyWithImpl;
 @useResult
 $Res call({
-@JsonKey(name: '_id') String id, String sku, String name, String brand, int price, int? costPrice, int? originalPrice, String? description, String? image, List<String> images, String? category, List<String> skinTypes, String? volume, String? origin, String? expiryDate, List<Ingredient> ingredients, bool isActive, double? rating, int? reviewCount, DateTime? createdAt, DateTime? updatedAt
+@JsonKey(name: '_id') String id, String sku, String name, String brand, int price, int? costPrice, int? originalPrice, String? description, String? image, List<String> images, String? category, List<String> skinTypes, String? volume, String? origin, String? expiryDate, List<Ingredient> ingredients, bool isActive, double? rating, int? reviewCount, Map<String, int> ratingBreakdown, DateTime? createdAt, DateTime? updatedAt
 });
 
 
@@ -351,7 +353,7 @@ class _$ProductCopyWithImpl<$Res>
 
 /// Create a copy of Product
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? sku = null,Object? name = null,Object? brand = null,Object? price = null,Object? costPrice = freezed,Object? originalPrice = freezed,Object? description = freezed,Object? image = freezed,Object? images = null,Object? category = freezed,Object? skinTypes = null,Object? volume = freezed,Object? origin = freezed,Object? expiryDate = freezed,Object? ingredients = null,Object? isActive = null,Object? rating = freezed,Object? reviewCount = freezed,Object? createdAt = freezed,Object? updatedAt = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? sku = null,Object? name = null,Object? brand = null,Object? price = null,Object? costPrice = freezed,Object? originalPrice = freezed,Object? description = freezed,Object? image = freezed,Object? images = null,Object? category = freezed,Object? skinTypes = null,Object? volume = freezed,Object? origin = freezed,Object? expiryDate = freezed,Object? ingredients = null,Object? isActive = null,Object? rating = freezed,Object? reviewCount = freezed,Object? ratingBreakdown = null,Object? createdAt = freezed,Object? updatedAt = freezed,}) {
   return _then(Product(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,sku: null == sku ? _self.sku : sku // ignore: cast_nullable_to_non_nullable
@@ -372,7 +374,8 @@ as String?,ingredients: null == ingredients ? _self.ingredients : ingredients //
 as List<Ingredient>,isActive: null == isActive ? _self.isActive : isActive // ignore: cast_nullable_to_non_nullable
 as bool,rating: freezed == rating ? _self.rating : rating // ignore: cast_nullable_to_non_nullable
 as double?,reviewCount: freezed == reviewCount ? _self.reviewCount : reviewCount // ignore: cast_nullable_to_non_nullable
-as int?,createdAt: freezed == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
+as int?,ratingBreakdown: null == ratingBreakdown ? _self.ratingBreakdown : ratingBreakdown // ignore: cast_nullable_to_non_nullable
+as Map<String, int>,createdAt: freezed == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,updatedAt: freezed == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,
   ));
@@ -459,10 +462,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(name: '_id')  String id,  String sku,  String name,  String brand,  int price,  int? costPrice,  int? originalPrice,  String? description,  String? image,  List<String> images,  String? category,  List<String> skinTypes,  String? volume,  String? origin,  String? expiryDate,  List<Ingredient> ingredients,  bool isActive,  double? rating,  int? reviewCount,  DateTime? createdAt,  DateTime? updatedAt)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(name: '_id')  String id,  String sku,  String name,  String brand,  int price,  int? costPrice,  int? originalPrice,  String? description,  String? image,  List<String> images,  String? category,  List<String> skinTypes,  String? volume,  String? origin,  String? expiryDate,  List<Ingredient> ingredients,  bool isActive,  double? rating,  int? reviewCount,  Map<String, int> ratingBreakdown,  DateTime? createdAt,  DateTime? updatedAt)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Product() when $default != null:
-return $default(_that.id,_that.sku,_that.name,_that.brand,_that.price,_that.costPrice,_that.originalPrice,_that.description,_that.image,_that.images,_that.category,_that.skinTypes,_that.volume,_that.origin,_that.expiryDate,_that.ingredients,_that.isActive,_that.rating,_that.reviewCount,_that.createdAt,_that.updatedAt);case _:
+return $default(_that.id,_that.sku,_that.name,_that.brand,_that.price,_that.costPrice,_that.originalPrice,_that.description,_that.image,_that.images,_that.category,_that.skinTypes,_that.volume,_that.origin,_that.expiryDate,_that.ingredients,_that.isActive,_that.rating,_that.reviewCount,_that.ratingBreakdown,_that.createdAt,_that.updatedAt);case _:
   return orElse();
 
 }
@@ -480,10 +483,10 @@ return $default(_that.id,_that.sku,_that.name,_that.brand,_that.price,_that.cost
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(name: '_id')  String id,  String sku,  String name,  String brand,  int price,  int? costPrice,  int? originalPrice,  String? description,  String? image,  List<String> images,  String? category,  List<String> skinTypes,  String? volume,  String? origin,  String? expiryDate,  List<Ingredient> ingredients,  bool isActive,  double? rating,  int? reviewCount,  DateTime? createdAt,  DateTime? updatedAt)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(name: '_id')  String id,  String sku,  String name,  String brand,  int price,  int? costPrice,  int? originalPrice,  String? description,  String? image,  List<String> images,  String? category,  List<String> skinTypes,  String? volume,  String? origin,  String? expiryDate,  List<Ingredient> ingredients,  bool isActive,  double? rating,  int? reviewCount,  Map<String, int> ratingBreakdown,  DateTime? createdAt,  DateTime? updatedAt)  $default,) {final _that = this;
 switch (_that) {
 case _Product():
-return $default(_that.id,_that.sku,_that.name,_that.brand,_that.price,_that.costPrice,_that.originalPrice,_that.description,_that.image,_that.images,_that.category,_that.skinTypes,_that.volume,_that.origin,_that.expiryDate,_that.ingredients,_that.isActive,_that.rating,_that.reviewCount,_that.createdAt,_that.updatedAt);case _:
+return $default(_that.id,_that.sku,_that.name,_that.brand,_that.price,_that.costPrice,_that.originalPrice,_that.description,_that.image,_that.images,_that.category,_that.skinTypes,_that.volume,_that.origin,_that.expiryDate,_that.ingredients,_that.isActive,_that.rating,_that.reviewCount,_that.ratingBreakdown,_that.createdAt,_that.updatedAt);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -500,10 +503,10 @@ return $default(_that.id,_that.sku,_that.name,_that.brand,_that.price,_that.cost
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(name: '_id')  String id,  String sku,  String name,  String brand,  int price,  int? costPrice,  int? originalPrice,  String? description,  String? image,  List<String> images,  String? category,  List<String> skinTypes,  String? volume,  String? origin,  String? expiryDate,  List<Ingredient> ingredients,  bool isActive,  double? rating,  int? reviewCount,  DateTime? createdAt,  DateTime? updatedAt)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(name: '_id')  String id,  String sku,  String name,  String brand,  int price,  int? costPrice,  int? originalPrice,  String? description,  String? image,  List<String> images,  String? category,  List<String> skinTypes,  String? volume,  String? origin,  String? expiryDate,  List<Ingredient> ingredients,  bool isActive,  double? rating,  int? reviewCount,  Map<String, int> ratingBreakdown,  DateTime? createdAt,  DateTime? updatedAt)?  $default,) {final _that = this;
 switch (_that) {
 case _Product() when $default != null:
-return $default(_that.id,_that.sku,_that.name,_that.brand,_that.price,_that.costPrice,_that.originalPrice,_that.description,_that.image,_that.images,_that.category,_that.skinTypes,_that.volume,_that.origin,_that.expiryDate,_that.ingredients,_that.isActive,_that.rating,_that.reviewCount,_that.createdAt,_that.updatedAt);case _:
+return $default(_that.id,_that.sku,_that.name,_that.brand,_that.price,_that.costPrice,_that.originalPrice,_that.description,_that.image,_that.images,_that.category,_that.skinTypes,_that.volume,_that.origin,_that.expiryDate,_that.ingredients,_that.isActive,_that.rating,_that.reviewCount,_that.ratingBreakdown,_that.createdAt,_that.updatedAt);case _:
   return null;
 
 }
@@ -515,7 +518,7 @@ return $default(_that.id,_that.sku,_that.name,_that.brand,_that.price,_that.cost
 @JsonSerializable()
 
 class _Product extends Product {
-  const _Product({@JsonKey(name: '_id') required this.id, this.sku = '', this.name = '', this.brand = '', this.price = 0, this.costPrice, this.originalPrice, this.description, this.image,  List<String> images = const <String>[], this.category,  List<String> skinTypes = const <String>[], this.volume, this.origin, this.expiryDate,  List<Ingredient> ingredients = const <Ingredient>[], this.isActive = true, this.rating, this.reviewCount, this.createdAt, this.updatedAt}): _images = images,_skinTypes = skinTypes,_ingredients = ingredients,super._();
+  const _Product({@JsonKey(name: '_id') required this.id, this.sku = '', this.name = '', this.brand = '', this.price = 0, this.costPrice, this.originalPrice, this.description, this.image,  List<String> images = const <String>[], this.category,  List<String> skinTypes = const <String>[], this.volume, this.origin, this.expiryDate,  List<Ingredient> ingredients = const <Ingredient>[], this.isActive = true, this.rating, this.reviewCount,  Map<String, int> ratingBreakdown = const <String, int>{}, this.createdAt, this.updatedAt}): _images = images,_skinTypes = skinTypes,_ingredients = ingredients,_ratingBreakdown = ratingBreakdown,super._();
   factory _Product.fromJson(Map<String, dynamic> json) => _$ProductFromJson(json);
 
 @override@JsonKey(name: '_id') final  String id;
@@ -557,6 +560,17 @@ class _Product extends Product {
 /// Chỉ có ở `GET /products/:id`.
 @override final  double? rating;
 @override final  int? reviewCount;
+/// Số đánh giá theo mức sao, khóa `"1"`…`"5"` — chỉ có ở
+/// `GET /products/:id`.
+ final  Map<String, int> _ratingBreakdown;
+/// Số đánh giá theo mức sao, khóa `"1"`…`"5"` — chỉ có ở
+/// `GET /products/:id`.
+@override@JsonKey() Map<String, int> get ratingBreakdown {
+  if (_ratingBreakdown is EqualUnmodifiableMapView) return _ratingBreakdown;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableMapView(_ratingBreakdown);
+}
+
 @override final  DateTime? createdAt;
 @override final  DateTime? updatedAt;
 
@@ -573,18 +587,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _Product&&(identical(other.id, id) || other.id == id)&&(identical(other.sku, sku) || other.sku == sku)&&(identical(other.name, name) || other.name == name)&&(identical(other.brand, brand) || other.brand == brand)&&(identical(other.price, price) || other.price == price)&&(identical(other.costPrice, costPrice) || other.costPrice == costPrice)&&(identical(other.originalPrice, originalPrice) || other.originalPrice == originalPrice)&&(identical(other.description, description) || other.description == description)&&(identical(other.image, image) || other.image == image)&&const DeepCollectionEquality().equals(other.images, _images)&&(identical(other.category, category) || other.category == category)&&const DeepCollectionEquality().equals(other.skinTypes, _skinTypes)&&(identical(other.volume, volume) || other.volume == volume)&&(identical(other.origin, origin) || other.origin == origin)&&(identical(other.expiryDate, expiryDate) || other.expiryDate == expiryDate)&&const DeepCollectionEquality().equals(other.ingredients, _ingredients)&&(identical(other.isActive, isActive) || other.isActive == isActive)&&(identical(other.rating, rating) || other.rating == rating)&&(identical(other.reviewCount, reviewCount) || other.reviewCount == reviewCount)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _Product&&(identical(other.id, id) || other.id == id)&&(identical(other.sku, sku) || other.sku == sku)&&(identical(other.name, name) || other.name == name)&&(identical(other.brand, brand) || other.brand == brand)&&(identical(other.price, price) || other.price == price)&&(identical(other.costPrice, costPrice) || other.costPrice == costPrice)&&(identical(other.originalPrice, originalPrice) || other.originalPrice == originalPrice)&&(identical(other.description, description) || other.description == description)&&(identical(other.image, image) || other.image == image)&&const DeepCollectionEquality().equals(other.images, _images)&&(identical(other.category, category) || other.category == category)&&const DeepCollectionEquality().equals(other.skinTypes, _skinTypes)&&(identical(other.volume, volume) || other.volume == volume)&&(identical(other.origin, origin) || other.origin == origin)&&(identical(other.expiryDate, expiryDate) || other.expiryDate == expiryDate)&&const DeepCollectionEquality().equals(other.ingredients, _ingredients)&&(identical(other.isActive, isActive) || other.isActive == isActive)&&(identical(other.rating, rating) || other.rating == rating)&&(identical(other.reviewCount, reviewCount) || other.reviewCount == reviewCount)&&const DeepCollectionEquality().equals(other.ratingBreakdown, _ratingBreakdown)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hashAll([runtimeType,id,sku,name,brand,price,costPrice,originalPrice,description,image,const DeepCollectionEquality().hash(_images),category,const DeepCollectionEquality().hash(_skinTypes),volume,origin,expiryDate,const DeepCollectionEquality().hash(_ingredients),isActive,rating,reviewCount,createdAt,updatedAt]);
+    return Object.hashAll([runtimeType,id,sku,name,brand,price,costPrice,originalPrice,description,image,const DeepCollectionEquality().hash(_images),category,const DeepCollectionEquality().hash(_skinTypes),volume,origin,expiryDate,const DeepCollectionEquality().hash(_ingredients),isActive,rating,reviewCount,const DeepCollectionEquality().hash(_ratingBreakdown),createdAt,updatedAt]);
 }
 
 @override
 String toString() {
-    return 'Product(id: $id, sku: $sku, name: $name, brand: $brand, price: $price, costPrice: $costPrice, originalPrice: $originalPrice, description: $description, image: $image, images: $images, category: $category, skinTypes: $skinTypes, volume: $volume, origin: $origin, expiryDate: $expiryDate, ingredients: $ingredients, isActive: $isActive, rating: $rating, reviewCount: $reviewCount, createdAt: $createdAt, updatedAt: $updatedAt)';
+    return 'Product(id: $id, sku: $sku, name: $name, brand: $brand, price: $price, costPrice: $costPrice, originalPrice: $originalPrice, description: $description, image: $image, images: $images, category: $category, skinTypes: $skinTypes, volume: $volume, origin: $origin, expiryDate: $expiryDate, ingredients: $ingredients, isActive: $isActive, rating: $rating, reviewCount: $reviewCount, ratingBreakdown: $ratingBreakdown, createdAt: $createdAt, updatedAt: $updatedAt)';
 }
 
 
@@ -595,7 +609,7 @@ abstract mixin class _$ProductCopyWith<$Res> implements $ProductCopyWith<$Res> {
   factory _$ProductCopyWith(_Product value, $Res Function(_Product) _then) = __$ProductCopyWithImpl;
 @override @useResult
 $Res call({
-@JsonKey(name: '_id') String id, String sku, String name, String brand, int price, int? costPrice, int? originalPrice, String? description, String? image, List<String> images, String? category, List<String> skinTypes, String? volume, String? origin, String? expiryDate, List<Ingredient> ingredients, bool isActive, double? rating, int? reviewCount, DateTime? createdAt, DateTime? updatedAt
+@JsonKey(name: '_id') String id, String sku, String name, String brand, int price, int? costPrice, int? originalPrice, String? description, String? image, List<String> images, String? category, List<String> skinTypes, String? volume, String? origin, String? expiryDate, List<Ingredient> ingredients, bool isActive, double? rating, int? reviewCount, Map<String, int> ratingBreakdown, DateTime? createdAt, DateTime? updatedAt
 });
 
 
@@ -612,7 +626,7 @@ class __$ProductCopyWithImpl<$Res>
 
 /// Create a copy of Product
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? sku = null,Object? name = null,Object? brand = null,Object? price = null,Object? costPrice = freezed,Object? originalPrice = freezed,Object? description = freezed,Object? image = freezed,Object? images = null,Object? category = freezed,Object? skinTypes = null,Object? volume = freezed,Object? origin = freezed,Object? expiryDate = freezed,Object? ingredients = null,Object? isActive = null,Object? rating = freezed,Object? reviewCount = freezed,Object? createdAt = freezed,Object? updatedAt = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? sku = null,Object? name = null,Object? brand = null,Object? price = null,Object? costPrice = freezed,Object? originalPrice = freezed,Object? description = freezed,Object? image = freezed,Object? images = null,Object? category = freezed,Object? skinTypes = null,Object? volume = freezed,Object? origin = freezed,Object? expiryDate = freezed,Object? ingredients = null,Object? isActive = null,Object? rating = freezed,Object? reviewCount = freezed,Object? ratingBreakdown = null,Object? createdAt = freezed,Object? updatedAt = freezed,}) {
   return _then(_Product(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,sku: null == sku ? _self.sku : sku // ignore: cast_nullable_to_non_nullable
@@ -633,7 +647,8 @@ as String?,ingredients: null == ingredients ? _self._ingredients : ingredients /
 as List<Ingredient>,isActive: null == isActive ? _self.isActive : isActive // ignore: cast_nullable_to_non_nullable
 as bool,rating: freezed == rating ? _self.rating : rating // ignore: cast_nullable_to_non_nullable
 as double?,reviewCount: freezed == reviewCount ? _self.reviewCount : reviewCount // ignore: cast_nullable_to_non_nullable
-as int?,createdAt: freezed == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
+as int?,ratingBreakdown: null == ratingBreakdown ? _self._ratingBreakdown : ratingBreakdown // ignore: cast_nullable_to_non_nullable
+as Map<String, int>,createdAt: freezed == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,updatedAt: freezed == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,
   ));

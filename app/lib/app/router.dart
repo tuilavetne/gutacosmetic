@@ -6,7 +6,13 @@ import '../core/widgets/phase_placeholder.dart';
 import '../features/auth/presentation/forgot_password_screen.dart';
 import '../features/auth/presentation/login_screen.dart';
 import '../features/auth/presentation/register_screen.dart';
+import '../features/customer/presentation/account_screen.dart';
+import '../features/customer/presentation/category_screen.dart';
 import '../features/customer/presentation/customer_shell.dart';
+import '../features/customer/presentation/edit_profile_screen.dart';
+import '../features/customer/presentation/home_screen.dart';
+import '../features/customer/presentation/product_detail_screen.dart';
+import '../features/customer/presentation/wishlist_screen.dart';
 import '../features/session/presentation/select_store_screen.dart';
 import '../features/session/presentation/splash_screen.dart';
 import '../features/session/session_controller.dart';
@@ -89,8 +95,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             routes: [
               GoRoute(
                 path: AppRoutes.customerHome,
-                builder: (context, state) =>
-                    const PhasePlaceholder(title: 'Trang chủ', phase: 3),
+                builder: (context, state) => const CustomerHomeScreen(),
               ),
             ],
           ),
@@ -98,8 +103,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             routes: [
               GoRoute(
                 path: AppRoutes.customerCategory,
-                builder: (context, state) =>
-                    const PhasePlaceholder(title: 'Danh mục', phase: 3),
+                builder: (context, state) => const CustomerCategoryScreen(),
               ),
             ],
           ),
@@ -116,12 +120,31 @@ final routerProvider = Provider<GoRouter>((ref) {
             routes: [
               GoRoute(
                 path: AppRoutes.customerAccount,
-                builder: (context, state) =>
-                    const PhasePlaceholder(title: 'Tài khoản', phase: 4),
+                builder: (context, state) => const CustomerAccountScreen(),
               ),
             ],
           ),
         ],
+      ),
+
+      // ---- Customer: màn con, mở đè lên bottom navigation ----
+      GoRoute(
+        path: AppRoutes.customerWishlist,
+        builder: (context, state) => const WishlistScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.customerEditProfile,
+        builder: (context, state) => const EditProfileScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.customerProductPattern,
+        builder: (context, state) =>
+            ProductDetailScreen(productId: state.pathParameters['id']!),
+      ),
+      GoRoute(
+        path: AppRoutes.customerCart,
+        builder: (context, state) =>
+            const PhasePlaceholder(title: 'Giỏ hàng', phase: 4),
       ),
     ],
     errorBuilder: (context, state) => const PhasePlaceholder(

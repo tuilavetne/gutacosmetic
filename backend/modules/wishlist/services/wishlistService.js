@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 const User = require("../../../models/User");
 const Product = require("../../../models/Product");
 const AppError = require("../../../utils/AppError");
+const { CUSTOMER_HIDDEN_PRODUCT_FIELDS } = require("../../../utils/productProjection");
 
 const toggleWishlist = async (userId, productId) => {
   if (!mongoose.isValidObjectId(productId)) {
@@ -33,7 +34,12 @@ const toggleWishlist = async (userId, productId) => {
 const getWishlist = async (userId) => {
   const user = await User.findById(userId)
     .select("wishlist")
-    .populate({ path: "wishlist", match: { isActive: true } })
+    .populate({
+      path: "wishlist",
+      match: { isActive: true },
+      // Chỉ khách hàng có wishlist — không trả giá vốn.
+      select: CUSTOMER_HIDDEN_PRODUCT_FIELDS,
+    })
     .lean();
 
   return (user?.wishlist || []).filter(Boolean);

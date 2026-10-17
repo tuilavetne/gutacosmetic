@@ -35,6 +35,12 @@ const _messages = <String, String>{
   'PASSWORD_MISMATCH': 'Mật khẩu xác nhận không khớp.',
   'VALIDATION_ERROR': 'Vui lòng điền đầy đủ thông tin bắt buộc.',
 
+  // ---- Ảnh đại diện ----
+  'INVALID_IMAGE_TYPE': 'Ảnh đại diện phải là JPG, PNG hoặc WEBP.',
+  'IMAGE_TOO_LARGE': 'Ảnh đại diện tối đa 5 MB.',
+  'AVATAR_REQUIRED': 'Vui lòng chọn một ảnh.',
+  'AVATAR_UPLOAD_FAILED': 'Không tải được ảnh lên. Vui lòng thử lại.',
+
   // ---- Google ----
   'GOOGLE_TOKEN_REQUIRED': 'Không nhận được thông tin đăng nhập từ Google.',
   'INVALID_GOOGLE_TOKEN': 'Xác thực Google thất bại. Vui lòng thử lại.',
@@ -73,6 +79,7 @@ const _messages = <String, String>{
   'PRODUCT_NOT_FOUND': 'Không tìm thấy sản phẩm.',
   'PRODUCT_UNAVAILABLE': 'Một hoặc nhiều sản phẩm đã ngừng bán.',
   'INVALID_PRODUCT_ID': 'Mã sản phẩm không hợp lệ.',
+  'INVALID_PAGINATION': 'Tham số phân trang không hợp lệ.',
   'SKU_EXISTS': 'SKU đã tồn tại.',
   'INSUFFICIENT_STOCK':
       'Một hoặc nhiều sản phẩm không đủ số lượng tại chi nhánh đã chọn.',

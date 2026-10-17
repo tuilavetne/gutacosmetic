@@ -29,6 +29,9 @@ abstract class StoreStock with _$StoreStock {
       _$StoreStockFromJson(json);
 
   bool get isOutOfStock => availableStock <= 0;
+
+  /// Còn hàng nhưng không quá ngưỡng cảnh báo của cửa hàng.
+  bool get isLowStock => !isOutOfStock && availableStock <= lowStockThreshold;
 }
 
 @freezed

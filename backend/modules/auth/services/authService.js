@@ -218,7 +218,8 @@ const loginWithGoogleIdentity = async ({
 
     user.googleId = googleId;
     user.emailVerified = true;
-    user.avatarUrl = avatarUrl || user.avatarUrl;
+    // Giữ ảnh đại diện user đã tự đổi; chỉ lấy ảnh Google khi chưa có.
+    user.avatarUrl = user.avatarUrl || avatarUrl || "";
     await user.save();
     return createAuthResponse(user);
   }

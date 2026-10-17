@@ -20,6 +20,17 @@ void main() {
       expect(Validators.normalizePhone('(091) 234.5678'), '0912345678');
     });
 
+    test('SĐT dạng lưu ở backend (+84) và dạng hiển thị (0)', () {
+      expect(Validators.canonicalPhone('0912 345 678'), '+84912345678');
+      expect(Validators.canonicalPhone('+84912345678'), '+84912345678');
+      expect(Validators.localPhone('+84912345678'), '0912345678');
+      expect(Validators.localPhone(null), '');
+      expect(formatPhone('+84912345678'), '0912 345 678');
+      expect(formatPhone('0909000003'), '0909 000 003');
+      expect(formatPhone('12345'), '12345');
+      expect(formatPhone(null), '');
+    });
+
     test('mật khẩu', () {
       expect(Validators.password('Abcdefg1'), isNull);
       expect(Validators.password('abcdefg1'), isNotNull);

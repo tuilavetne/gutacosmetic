@@ -14,16 +14,73 @@ const assertValidObjectId = (id, label = "ID") => {
 
 // ─── Queries ──────────────────────────────────────────────────────────────────
 
-const getReviewsByProduct = async (productId, { limit } = {}) => {
-  assertValidObjectId(productId, "Product ID");
+const MAX_REVIEW_PAGE_SIZE = 50;
+const DEFAULT_REVIEW_PAGE_SIZE = 10;
 
-  const query = Review.find({ productId }).sort({ createdAt: -1 }).lean();
-
-  if (limit) {
-    query.limit(limit);
+const parsePaginationNumber = (value, label, min) => {
+  if (value === undefined || value === null || value === "") {
+    return undefined;
   }
 
-  return query;
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed < min) {
+    throw new AppError(
+      `${label} phải là số nguyên ≥ ${min}`,
+      400,
+      "INVALID_PAGINATION"
+    );
+  }
+
+  return parsed;
+};
+
+/**
+ * Đánh giá của sản phẩm, mới nhất trước.
+ *
+ * - Không truyền gì: trả tất cả (giữ hành vi cũ).
+ * - Chỉ `limit`: `limit` đánh giá mới nhất (giữ hành vi cũ).
+ * - Có `page` hoặc `skip`: phân trang, `limit` mặc định 10, tối đa 50.
+ *   `skip` được ưu tiên hơn `page`.
+ */
+const getReviewsByProduct = async (productId, { limit, page, skip } = {}) => {
+  assertValidObjectId(productId, "Product ID");
+
+  const parsedLimit = parsePaginationNumber(limit, "limit", 1);
+  const parsedPage = parsePaginationNumber(page, "page", 1);
+  const parsedSkip = parsePaginationNumber(skip, "skip", 0);
+  const isPaged = parsedPage !== undefined || parsedSkip !== undefined;
+
+  const pageSize = isPaged
+    ? Math.min(parsedLimit ?? DEFAULT_REVIEW_PAGE_SIZE, MAX_REVIEW_PAGE_SIZE)
+    : parsedLimit;
+  const offset = isPaged ? parsedSkip ?? (parsedPage - 1) * pageSize : 0;
+
+  const filter = { productId };
+  const query = Review.find(filter).sort({ createdAt: -1, _id: -1 });
+
+  if (offset) {
+    query.skip(offset);
+  }
+
+  if (pageSize) {
+    query.limit(pageSize);
+  }
+
+  const [reviews, total] = await Promise.all([
+    query.lean(),
+    Review.countDocuments(filter),
+  ]);
+
+  return {
+    reviews,
+    pagination: {
+      total,
+      skip: offset,
+      limit: pageSize ?? null,
+      page: pageSize ? Math.floor(offset / pageSize) + 1 : 1,
+      hasMore: offset + reviews.length < total,
+    },
+  };
 };
 
 const getReviewsByOrder = async (orderId) => {
@@ -34,20 +91,30 @@ const getReviewsByOrder = async (orderId) => {
 const getRatingSummary = async (productId) => {
   assertValidObjectId(productId, "Product ID");
 
-  const [summary] = await Review.aggregate([
+  const groups = await Review.aggregate([
     { $match: { productId: new mongoose.Types.ObjectId(productId) } },
-    {
-      $group: {
-        _id: null,
-        rating: { $avg: "$rating" },
-        reviewCount: { $sum: 1 },
-      },
-    },
+    { $group: { _id: "$rating", count: { $sum: 1 } } },
   ]);
 
+  // Số đánh giá theo từng mức sao, luôn đủ 5 khóa "1"…"5".
+  const ratingBreakdown = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+  let reviewCount = 0;
+  let ratingTotal = 0;
+
+  groups.forEach(({ _id: star, count }) => {
+    if (ratingBreakdown[star] === undefined) {
+      return;
+    }
+
+    ratingBreakdown[star] = count;
+    reviewCount += count;
+    ratingTotal += star * count;
+  });
+
   return {
-    rating: summary ? Math.round(summary.rating * 10) / 10 : 0,
-    reviewCount: summary ? summary.reviewCount : 0,
+    rating: reviewCount ? Math.round((ratingTotal / reviewCount) * 10) / 10 : 0,
+    reviewCount,
+    ratingBreakdown,
   };
 };
 

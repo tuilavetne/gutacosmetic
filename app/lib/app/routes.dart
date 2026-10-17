@@ -21,6 +21,13 @@ abstract final class AppRoutes {
   static const customerOrders = '/customer/orders';
   static const customerAccount = '/customer/account';
 
+  // Màn con của khách hàng — mở đè lên bottom navigation.
+  static const customerCart = '/customer/cart';
+  static const customerWishlist = '/customer/wishlist';
+  static const customerEditProfile = '/customer/profile/edit';
+  static const customerProductPattern = '/customer/products/:id';
+  static String customerProduct(String id) => '/customer/products/$id';
+
   static String homeFor(UserRole role) => switch (role) {
     UserRole.owner => owner,
     UserRole.manager => manager,
