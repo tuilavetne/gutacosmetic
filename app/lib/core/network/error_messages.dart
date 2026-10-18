@@ -121,6 +121,9 @@ const _messages = <String, String>{
   'ORDER_NOT_FOUND': 'Không tìm thấy đơn hàng.',
   'INVALID_ORDER_ID': 'Mã đơn hàng không hợp lệ.',
   'INVALID_ORDER_STATE': 'Trạng thái đơn hàng không cho phép thao tác này.',
+  'INVALID_CANCELLATION_REASON':
+      'Vui lòng nhập lý do hủy đơn chi tiết hơn (ít nhất 15 ký tự).',
+  'CANCELLATION_REASON_TOO_LONG': 'Lý do hủy đơn tối đa 255 ký tự.',
   'INVALID_ORDER_TRANSITION': 'Không thể chuyển đơn sang trạng thái này.',
   'INVALID_ORDER_CHANNEL': 'Chỉ đơn online mới thanh toán qua PayOS.',
   'INVALID_FULFILLMENT_TYPE':

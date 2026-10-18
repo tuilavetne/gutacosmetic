@@ -65,12 +65,10 @@ extension CustomerOrderDisplay on Order {
     _ => AppColors.info,
   };
 
-  /// Khách được hủy đơn online đang chờ xác nhận và chưa thanh toán (đơn đã
-  /// trả tiền cần cửa hàng hoàn tiền).
+  /// Khách được hủy đơn online đang chờ xác nhận. Đơn đã trả tiền vẫn hủy
+  /// được, cửa hàng hoàn tiền sau.
   bool get customerCanCancel =>
-      channel == OrderChannel.online &&
-      status == OrderStatus.pending &&
-      !isPaid;
+      channel == OrderChannel.online && status == OrderStatus.pending;
 
   /// Đơn hoàn tất chưa đánh giá (mỗi đơn được đánh giá một lần).
   bool get canReview =>
@@ -94,6 +92,8 @@ extension CustomerOrderDisplay on Order {
   };
 
   String get paymentStatusLabel {
+    if (awaitsRefund) return 'Đã thanh toán · Chờ hoàn tiền';
+    if (refundStatus == RefundStatus.refunded) return 'Đã hoàn tiền';
     if (isPaid) return 'Đã thanh toán';
     if (paymentStatus == PaymentStatus.failed) return 'Thanh toán thất bại';
     if (paymentStatus == PaymentStatus.refunded) return 'Đã hoàn tiền';
@@ -102,6 +102,15 @@ extension CustomerOrderDisplay on Order {
         ? (isPickup ? 'Trả khi nhận tại cửa hàng' : 'Trả khi nhận hàng')
         : 'Chưa thanh toán';
   }
+
+  /// Ghi chú hoàn tiền của đơn bị hủy sau khi đã trả tiền.
+  String? get refundNote => switch (refundStatus) {
+    RefundStatus.pendingRefund =>
+      'Cửa hàng sẽ kiểm tra và hoàn tiền vào tài khoản của bạn trong vòng '
+          '${AppConstants.refundBusinessDays} ngày làm việc.',
+    RefundStatus.refunded => 'Cửa hàng đã hoàn tiền cho đơn này.',
+    RefundStatus.none => null,
+  };
 
   /// Lý do hủy đã dịch (lý do tự động của backend là tiếng Anh).
   String? get cancellationReasonLabel {

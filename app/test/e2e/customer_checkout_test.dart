@@ -28,6 +28,8 @@ import 'package:material_ui/material_ui.dart';
 
 import 'e2e_helpers.dart';
 
+const _cancelReason = 'Test e2e: khách đổi ý không mua nữa';
+
 final _verticalScroll = find.byWidgetPredicate(
   (w) => w is Scrollable && w.axisDirection == AxisDirection.down,
 );
@@ -117,8 +119,15 @@ Future<void> _cancelFromDetail(WidgetTester tester) async {
   await tester.tap(find.widgetWithText(OutlinedButton, 'Hủy đơn'));
   await tester.pump(const Duration(milliseconds: 400));
   expect(find.text('Hủy đơn hàng'), findsOneWidget);
+  // Lý do dưới 15 ký tự: nút xác nhận bị khóa.
   await tester.enterText(find.byType(TextField).last, 'Test e2e');
-  await tester.tap(find.widgetWithText(FilledButton, 'Hủy đơn'));
+  await tester.pump();
+  expect(find.text('8/15 ký tự'), findsOneWidget);
+  final confirm = find.widgetWithText(FilledButton, 'Xác nhận hủy');
+  expect(tester.widget<FilledButton>(confirm).onPressed, isNull);
+  await tester.enterText(find.byType(TextField).last, _cancelReason);
+  await tester.pump();
+  await tester.tap(confirm);
   await waitFor(tester, find.textContaining('Đơn đã hủy lúc'));
 }
 
@@ -158,7 +167,7 @@ void main() {
       final cancelled = await _fetchOrder(tester, container, id);
       expect(cancelled.status, OrderStatus.cancelled);
       expect(cancelled.inventoryReserved, isFalse);
-      expect(cancelled.cancellationReason, 'Test e2e');
+      expect(cancelled.cancellationReason, _cancelReason);
 
       await finish(tester);
     },

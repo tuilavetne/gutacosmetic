@@ -106,7 +106,8 @@ class _StatusCard extends StatelessWidget {
         'Đơn hoàn tất lúc ${formatFullDateTime(order.completedAt ?? order.updatedAt)}.',
       OrderStatus.cancelled =>
         'Đơn đã hủy lúc ${formatFullDateTime(order.cancelledAt ?? order.updatedAt)}.'
-            '${order.cancellationReasonLabel == null ? '' : '\nLý do: ${order.cancellationReasonLabel}'}',
+            '${order.cancellationReasonLabel == null ? '' : '\nLý do: ${order.cancellationReasonLabel}'}'
+            '${order.refundNote == null ? '' : '\n${order.refundNote}'}',
       _ => 'Đơn hàng đang được xử lý.',
     };
   }

@@ -86,6 +86,9 @@ abstract class Order with _$Order {
     @JsonKey(readValue: readEnumValue)
     @Default(PaymentStatus.unpaid)
     PaymentStatus paymentStatus,
+    @JsonKey(readValue: readEnumValue, unknownEnumValue: RefundStatus.none)
+    @Default(RefundStatus.none)
+    RefundStatus refundStatus,
     @JsonKey(readValue: readEnumValue) PaymentMethod? paymentMethod,
 
     // PayOS
@@ -135,6 +138,7 @@ abstract class Order with _$Order {
 
   bool get isBankTransfer => paymentMethod == PaymentMethod.bankTransfer;
   bool get isPaid => paymentStatus == PaymentStatus.paid;
+  bool get awaitsRefund => refundStatus == RefundStatus.pendingRefund;
 
   /// Đơn chuyển khoản chưa trả, còn có thể thanh toán.
   bool get awaitsBankTransfer =>

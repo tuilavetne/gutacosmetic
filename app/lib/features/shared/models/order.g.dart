@@ -133,6 +133,13 @@ _Order _$OrderFromJson(Map<String, dynamic> json) => _Order(
         readEnumValue(json, 'paymentStatus'),
       ) ??
       PaymentStatus.unpaid,
+  refundStatus:
+      $enumDecodeNullable(
+        _$RefundStatusEnumMap,
+        readEnumValue(json, 'refundStatus'),
+        unknownValue: RefundStatus.none,
+      ) ??
+      RefundStatus.none,
   paymentMethod: $enumDecodeNullable(
     _$PaymentMethodEnumMap,
     readEnumValue(json, 'paymentMethod'),
@@ -216,6 +223,7 @@ Map<String, dynamic> _$OrderToJson(_Order instance) => <String, dynamic>{
   'pointsEarned': instance.pointsEarned,
   'status': _$OrderStatusEnumMap[instance.status]!,
   'paymentStatus': _$PaymentStatusEnumMap[instance.paymentStatus]!,
+  'refundStatus': _$RefundStatusEnumMap[instance.refundStatus]!,
   'paymentMethod': ?_$PaymentMethodEnumMap[instance.paymentMethod],
   'paymentProvider': ?instance.paymentProvider,
   'paymentOrderCode': ?_$JsonConverterToJson<Object, String>(
@@ -273,6 +281,12 @@ const _$PaymentStatusEnumMap = {
   PaymentStatus.paid: 'PAID',
   PaymentStatus.refunded: 'REFUNDED',
   PaymentStatus.failed: 'FAILED',
+};
+
+const _$RefundStatusEnumMap = {
+  RefundStatus.none: 'NONE',
+  RefundStatus.pendingRefund: 'PENDING_REFUND',
+  RefundStatus.refunded: 'REFUNDED',
 };
 
 const _$PaymentMethodEnumMap = {

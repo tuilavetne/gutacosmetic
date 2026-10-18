@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../app/routes.dart';
+import '../../../core/utils/constants.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_messenger.dart';
 import '../../../core/widgets/confirm_dialog.dart';
@@ -32,24 +33,33 @@ class OrderActions {
     if (context.mounted) _refreshOrders();
   }
 
+  /// Hủy đơn kèm lý do bắt buộc. Đơn đã trả tiền được báo trước về hoàn tiền.
   Future<void> cancel() async {
     final reason = await showReasonDialog(
       context,
       title: 'Hủy đơn hàng',
-      message:
-          'Hủy đơn ${order.orderCode}? Sản phẩm sẽ được trả lại kho và '
-          'không thể khôi phục đơn này.',
-      confirmLabel: 'Hủy đơn',
+      message: order.isPaid
+          ? 'Đơn hàng của bạn đã được thanh toán. Cửa hàng sẽ tiến hành kiểm '
+                'tra và hoàn tiền lại vào tài khoản của bạn trong vòng '
+                '${AppConstants.refundBusinessDays} ngày làm việc. Bạn có chắc '
+                'chắn muốn hủy?'
+          : 'Hủy đơn ${order.orderCode}? Sản phẩm sẽ được trả lại kho và '
+                'không thể khôi phục đơn này.',
+      confirmLabel: 'Xác nhận hủy',
+      minLength: AppConstants.cancellationReasonMinLength,
+      maxLength: AppConstants.cancellationReasonMaxLength,
     );
     if (reason == null) return;
-    await ref
+    final cancelled = await ref
         .read(orderRepositoryProvider)
-        .cancelOrder(
-          order.id,
-          reason: reason.isEmpty ? 'Khách hàng hủy đơn' : reason,
-        );
+        .cancelOrder(order.id, reason: reason);
     if (context.mounted) _refreshOrders();
-    showAppSnackBar('Đã hủy đơn ${order.orderCode}.');
+    showAppSnackBar(
+      cancelled.awaitsRefund
+          ? 'Đã hủy đơn ${order.orderCode}. Cửa hàng sẽ hoàn tiền trong vòng '
+                '${AppConstants.refundBusinessDays} ngày làm việc.'
+          : 'Đã hủy đơn ${order.orderCode}.',
+    );
   }
 
   /// Thêm lại các sản phẩm của đơn vào giỏ rồi mở giỏ hàng.

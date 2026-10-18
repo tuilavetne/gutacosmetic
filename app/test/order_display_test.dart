@@ -93,7 +93,7 @@ void main() {
     );
   });
 
-  test('chỉ hủy được đơn online chờ xác nhận chưa thanh toán', () {
+  test('hủy được đơn online chờ xác nhận, kể cả đã thanh toán', () {
     expect(_order().customerCanCancel, isTrue);
     expect(_order(status: OrderStatus.preparing).customerCanCancel, isFalse);
     expect(
@@ -101,7 +101,43 @@ void main() {
         method: PaymentMethod.bankTransfer,
         payment: PaymentStatus.paid,
       ).customerCanCancel,
+      isTrue,
+    );
+    expect(
+      _order().copyWith(channel: OrderChannel.offline).customerCanCancel,
       isFalse,
+    );
+  });
+
+  test('đơn đã trả tiền bị hủy: chờ hoàn tiền rồi đã hoàn tiền', () {
+    final cancelled = _order(
+      status: OrderStatus.cancelled,
+      method: PaymentMethod.bankTransfer,
+      payment: PaymentStatus.paid,
+    );
+    expect(cancelled.refundNote, isNull);
+    expect(cancelled.paymentStatusLabel, 'Đã thanh toán');
+
+    final pending = cancelled.copyWith(
+      refundStatus: RefundStatus.pendingRefund,
+    );
+    expect(pending.awaitsRefund, isTrue);
+    expect(pending.paymentStatusLabel, contains('Chờ hoàn tiền'));
+    expect(pending.refundNote, contains('ngày làm việc'));
+
+    final refunded = cancelled.copyWith(refundStatus: RefundStatus.refunded);
+    expect(refunded.paymentStatusLabel, 'Đã hoàn tiền');
+    expect(refunded.refundNote, isNotNull);
+
+    final json = Order.fromJson({
+      '_id': 'o2',
+      'status': 'CANCELLED',
+      'refundStatus': 'PENDING_REFUND',
+    });
+    expect(json.refundStatus, RefundStatus.pendingRefund);
+    expect(
+      Order.fromJson({'_id': 'o3', 'status': 'PENDING'}).refundStatus,
+      RefundStatus.none,
     );
   });
 

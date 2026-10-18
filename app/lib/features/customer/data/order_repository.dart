@@ -78,8 +78,9 @@ class OrderRepository {
     return PlacedOrder.fromJson(json);
   }
 
-  /// `PATCH /orders/:id/cancel` — khách chỉ hủy được đơn đang chờ xác nhận.
-  Future<Order> cancelOrder(String id, {String reason = ''}) async {
+  /// `PATCH /orders/:id/cancel` — khách chỉ hủy được đơn đang chờ xác nhận,
+  /// lý do 15–255 ký tự. Đơn đã trả tiền trả về `refundStatus: PENDING_REFUND`.
+  Future<Order> cancelOrder(String id, {required String reason}) async {
     final json = await _api.patch(
       '/orders/$id/cancel',
       data: {'reason': reason},
