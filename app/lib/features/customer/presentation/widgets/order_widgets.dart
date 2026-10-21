@@ -23,6 +23,29 @@ class OrderStatusBadge extends StatelessWidget {
   );
 }
 
+/// Nhãn trạng thái đơn dành cho nhân viên Sales / Quầy POS
+class SalesOrderStatusBadge extends StatelessWidget {
+  const SalesOrderStatusBadge({super.key, required this.order});
+
+  final Order order;
+
+  @override
+  Widget build(BuildContext context) {
+    final (label, color) = switch (order.status) {
+      OrderStatus.draft => ('Nháp', AppColors.muted),
+      OrderStatus.pendingApproval => ('Chờ duyệt', const Color(0xFFF59E0B)),
+      OrderStatus.pendingPayment => ('Chờ thu ngân', const Color(0xFF2563EB)),
+      OrderStatus.pending => ('Chờ xác nhận', const Color(0xFFD97706)),
+      OrderStatus.paid => ('Đã thanh toán', const Color(0xFF059669)),
+      OrderStatus.preparing => ('Đang xử lý', const Color(0xFF0D9488)),
+      OrderStatus.readyForPickup => ('Sẵn sàng nhận', const Color(0xFF0284C7)),
+      OrderStatus.completed => ('Hoàn tất', const Color(0xFF16A34A)),
+      OrderStatus.cancelled => ('Đã hủy', const Color(0xFFDC2626)),
+    };
+    return StatusChip(label: label, color: color);
+  }
+}
+
 /// Tiêu đề nhỏ + thẻ nội dung.
 class TitledCard extends StatelessWidget {
   const TitledCard({
