@@ -40,6 +40,7 @@ const seedInventoryForStore = async (storeId) => {
           productId: product._id,
           totalStock: 50,
           reservedStock: 0,
+          availableStock: 50,
           lowStockThreshold: 5,
         },
       },
