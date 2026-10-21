@@ -9,6 +9,7 @@ const {
   ORDER_STATUSES,
   PAYMENT_METHODS,
   PAYMENT_STATUSES,
+  REFUND_STATUSES,
   USER_ROLES,
 } = require("../../../constants/business");
 
@@ -387,15 +388,127 @@ const createPosPayosPaymentLink = async (orderId, manager, options = {}) => {
   return buildPaymentResponse(order);
 };
 
+const flagPendingRefund = (order, note) => {
+  if ((order.refundStatus || REFUND_STATUSES.NONE) !== REFUND_STATUSES.NONE) {
+    return;
+  }
+
+  order.refundStatus = REFUND_STATUSES.PENDING_REFUND;
+  order.statusHistory.push({
+    status: ORDER_STATUSES.CANCELLED,
+    changedBy: null,
+    note,
+  });
+};
+
+// PayOS báo đã nhận tiền cho đơn online. Đơn bị hủy chủ động (có
+// `cancelledBy`) giữ nguyên trạng thái hủy và chờ hoàn tiền; đơn tự hủy do QR
+// hết hạn được khôi phục nếu còn đủ hàng.
+const markOnlineOrderPaid = async (order) => {
+  if (order.status === ORDER_STATUSES.CANCELLED) {
+    if (order.cancelledBy) {
+      flagPendingRefund(
+        order,
+        "PayOS confirmed payment after the order was cancelled; refund required"
+      );
+    } else {
+      if (!order.inventoryReserved) {
+        try {
+          await inventoryService.reserveStock(order.storeId, order.items);
+          order.inventoryReserved = true;
+        } catch (error) {
+          if (!(error instanceof AppError)) {
+            throw error;
+          }
+
+          flagPendingRefund(
+            order,
+            "PayOS confirmed payment after the order expired but stock is no longer available; refund required"
+          );
+        }
+      }
+
+      if (order.inventoryReserved) {
+        order.status = ORDER_STATUSES.PENDING;
+        order.cancelledAt = null;
+        order.cancellationReason = "";
+        order.statusHistory.push({
+          status: ORDER_STATUSES.PENDING,
+          changedBy: null,
+          note: "PayOS confirmed payment after the order was marked expired",
+        });
+      }
+    }
+  }
+
+  order.paymentStatus = PAYMENT_STATUSES.PAID;
+  order.paidAt = order.paidAt || new Date();
+};
+
+// Hủy link QR của đơn vừa bị hủy để khách không quét mã cũ. Nếu PayOS từ chối
+// (thường vì khách vừa trả xong) thì hỏi lại trạng thái link và ghi nhận tiền
+// đã vào. Lỗi PayOS không làm hỏng thao tác hủy đơn.
+const cancelPaymentLinkForCancelledOrder = async (order) => {
+  if (
+    order.paymentMethod !== PAYMENT_METHODS.BANK_TRANSFER ||
+    !order.paymentOrderCode ||
+    order.paymentStatus === PAYMENT_STATUSES.PAID
+  ) {
+    return order;
+  }
+
+  let payOS;
+
+  try {
+    ({ payOS } = createPayOSClient());
+  } catch (error) {
+    logPayos("skip cancel payment link", { error: error.message });
+    return order;
+  }
+
+  try {
+    await payOS.paymentRequests.cancel(
+      order.paymentOrderCode,
+      "Don hang da bi huy"
+    );
+    return order;
+  } catch (error) {
+    logPayos("provider cancel failed", {
+      orderId: String(order._id),
+      paymentOrderCode: order.paymentOrderCode,
+      error: error.message,
+    });
+  }
+
+  try {
+    const paymentLink = await payOS.paymentRequests.get(order.paymentOrderCode);
+    // Tải lại: `order` vẫn gắn với session của transaction hủy đơn đã đóng.
+    const freshOrder = await Order.findById(order._id);
+    return await applyPaymentLinkStatus(freshOrder, paymentLink);
+  } catch (error) {
+    logPayos("provider sync after cancel failed", { error: error.message });
+    return order;
+  }
+};
+
 const handlePayosWebhook = async (body) => {
   let data;
 
   try {
     const { payOS } = createPayOSClient();
-    data = payOS.webhooks.verify(body);
+    data = await payOS.webhooks.verify(body);
   } catch (error) {
     throw new AppError(
       error.message || "PayOS webhook signature is invalid",
+      400,
+      "PAYOS_INVALID_WEBHOOK"
+    );
+  }
+
+  // Không có orderCode thì `findOne` sẽ khớp một đơn bất kỳ.
+  if (data?.orderCode === undefined || data?.orderCode === null) {
+    throw new AppError(
+      "PayOS webhook is missing orderCode",
       400,
       "PAYOS_INVALID_WEBHOOK"
     );
@@ -414,25 +527,8 @@ const handlePayosWebhook = async (body) => {
   if (data.code === "00") {
     if (order.channel === ORDER_CHANNELS.OFFLINE) {
       await completeOfflinePayosOrder(order);
-    } else if (order.status === ORDER_STATUSES.CANCELLED) {
-      if (!order.inventoryReserved) {
-        await inventoryService.reserveStock(order.storeId, order.items);
-        order.inventoryReserved = true;
-      }
-
-      order.status = ORDER_STATUSES.PENDING;
-      order.cancelledAt = null;
-      order.cancellationReason = "";
-      order.statusHistory.push({
-        status: ORDER_STATUSES.PENDING,
-        changedBy: null,
-        note: "PayOS confirmed payment after the order was marked expired",
-      });
-    }
-
-    if (order.channel !== ORDER_CHANNELS.OFFLINE) {
-      order.paymentStatus = PAYMENT_STATUSES.PAID;
-      order.paidAt = order.paidAt || new Date();
+    } else {
+      await markOnlineOrderPaid(order);
     }
   } else if (order.paymentStatus !== PAYMENT_STATUSES.PAID) {
     order.paymentStatus = PAYMENT_STATUSES.FAILED;
@@ -456,25 +552,8 @@ const applyPaymentLinkStatus = async (order, paymentLink, actorId = null) => {
   if (paymentLink.status === "PAID") {
     if (order.channel === ORDER_CHANNELS.OFFLINE) {
       await completeOfflinePayosOrder(order, actorId);
-    } else if (order.status === ORDER_STATUSES.CANCELLED) {
-      if (!order.inventoryReserved) {
-        await inventoryService.reserveStock(order.storeId, order.items);
-        order.inventoryReserved = true;
-      }
-
-      order.status = ORDER_STATUSES.PENDING;
-      order.cancelledAt = null;
-      order.cancellationReason = "";
-      order.statusHistory.push({
-        status: ORDER_STATUSES.PENDING,
-        changedBy: null,
-        note: "PayOS confirmed payment after the order was marked expired",
-      });
-    }
-
-    if (order.channel !== ORDER_CHANNELS.OFFLINE) {
-      order.paymentStatus = PAYMENT_STATUSES.PAID;
-      order.paidAt = order.paidAt || new Date();
+    } else {
+      await markOnlineOrderPaid(order);
     }
   } else if (
     (["CANCELLED", "EXPIRED", "FAILED"].includes(paymentLink.status) ||
@@ -556,6 +635,7 @@ const syncPosPayosPaymentStatus = async (orderId, manager) => {
 };
 
 module.exports = {
+  cancelPaymentLinkForCancelledOrder,
   createPayosPaymentLink,
   createPosPayosPaymentLink,
   handlePayosWebhook,

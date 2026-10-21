@@ -100,6 +100,20 @@ enum PaymentStatus {
   };
 }
 
+/// Đơn hủy sau khi đã nhận tiền chờ cửa hàng hoàn tiền.
+@JsonEnum(fieldRename: FieldRename.screamingSnake)
+enum RefundStatus {
+  none,
+  pendingRefund,
+  refunded;
+
+  String get label => switch (this) {
+    none => 'Không hoàn tiền',
+    pendingRefund => 'Chờ hoàn tiền',
+    refunded => 'Đã hoàn tiền',
+  };
+}
+
 @JsonEnum(fieldRename: FieldRename.screamingSnake)
 enum PaymentMethod {
   cash,

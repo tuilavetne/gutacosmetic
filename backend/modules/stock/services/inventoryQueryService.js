@@ -60,9 +60,10 @@ const getProductInventory = async (filters = {}) => {
     Number.isInteger(parsedLimit) && parsedLimit > 0
       ? Math.min(parsedLimit, 100)
       : null;
-  const productQuery = Product.find(buildProductQuery(filters)).sort({
-    createdAt: -1,
-  });
+  // `projection` ẩn trường nội bộ (giá vốn) khi người gọi là khách hàng.
+  const productQuery = Product.find(buildProductQuery(filters))
+    .select(filters.projection || "")
+    .sort({ createdAt: -1 });
 
   if (normalizedLimit) {
     productQuery.limit(normalizedLimit);

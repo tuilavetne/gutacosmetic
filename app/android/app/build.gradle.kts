@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.gutacosmetic"
+    namespace = "com.gutacosmetic.pos"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 

@@ -5,17 +5,18 @@ const AppError = require("../../../utils/AppError");
 
 const getReviews = async (req, res, next) => {
   try {
-    const { productId, limit } = req.query;
+    const { productId, limit, page, skip } = req.query;
 
     if (!productId) {
       throw new AppError("productId query param là bắt buộc", 400, "PRODUCT_ID_REQUIRED");
     }
 
-    const reviews = await reviewService.getReviewsByProduct(productId, {
-      limit: limit ? Number(limit) : undefined,
-    });
+    const { reviews, pagination } = await reviewService.getReviewsByProduct(
+      productId,
+      { limit, page, skip }
+    );
 
-    res.json({ reviews });
+    res.json({ reviews, pagination });
   } catch (error) {
     next(error);
   }

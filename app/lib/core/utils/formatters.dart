@@ -8,6 +8,15 @@ String formatVnd(num? value) => '${_vndFormat.format((value ?? 0).round())}đ';
 /// `1234` → `1.234`.
 String formatNumber(num? value) => _vndFormat.format((value ?? 0).round());
 
+/// `+84912345678` → `0912 345 678`; SĐT không đúng dạng thì giữ nguyên.
+String formatPhone(String? value) {
+  final phone = (value ?? '').replaceAll(RegExp(r'[\s().-]'), '');
+  final local = phone.startsWith('+84') ? '0${phone.substring(3)}' : phone;
+  if (!RegExp(r'^0\d{9}$').hasMatch(local)) return value ?? '';
+  return '${local.substring(0, 4)} ${local.substring(4, 7)} '
+      '${local.substring(7)}';
+}
+
 /// `dd/MM HH:mm` theo giờ máy.
 String formatDateTime(DateTime? value) =>
     value == null ? '—' : DateFormat('dd/MM HH:mm').format(value.toLocal());

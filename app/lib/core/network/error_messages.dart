@@ -33,7 +33,16 @@ const _messages = <String, String>{
   'WEAK_PASSWORD':
       'Mật khẩu dài 8–72 ký tự, gồm chữ hoa, chữ thường và chữ số.',
   'PASSWORD_MISMATCH': 'Mật khẩu xác nhận không khớp.',
+  'CURRENT_PASSWORD_REQUIRED': 'Vui lòng nhập mật khẩu hiện tại.',
+  'INVALID_CURRENT_PASSWORD': 'Mật khẩu hiện tại không đúng.',
+  'SAME_PASSWORD': 'Mật khẩu mới phải khác mật khẩu hiện tại.',
   'VALIDATION_ERROR': 'Vui lòng điền đầy đủ thông tin bắt buộc.',
+
+  // ---- Ảnh đại diện ----
+  'INVALID_IMAGE_TYPE': 'Ảnh đại diện phải là JPG, PNG hoặc WEBP.',
+  'IMAGE_TOO_LARGE': 'Ảnh đại diện tối đa 5 MB.',
+  'AVATAR_REQUIRED': 'Vui lòng chọn một ảnh.',
+  'AVATAR_UPLOAD_FAILED': 'Không tải được ảnh lên. Vui lòng thử lại.',
 
   // ---- Google ----
   'GOOGLE_TOKEN_REQUIRED': 'Không nhận được thông tin đăng nhập từ Google.',
@@ -73,6 +82,7 @@ const _messages = <String, String>{
   'PRODUCT_NOT_FOUND': 'Không tìm thấy sản phẩm.',
   'PRODUCT_UNAVAILABLE': 'Một hoặc nhiều sản phẩm đã ngừng bán.',
   'INVALID_PRODUCT_ID': 'Mã sản phẩm không hợp lệ.',
+  'INVALID_PAGINATION': 'Tham số phân trang không hợp lệ.',
   'SKU_EXISTS': 'SKU đã tồn tại.',
   'INSUFFICIENT_STOCK':
       'Một hoặc nhiều sản phẩm không đủ số lượng tại chi nhánh đã chọn.',
@@ -111,6 +121,9 @@ const _messages = <String, String>{
   'ORDER_NOT_FOUND': 'Không tìm thấy đơn hàng.',
   'INVALID_ORDER_ID': 'Mã đơn hàng không hợp lệ.',
   'INVALID_ORDER_STATE': 'Trạng thái đơn hàng không cho phép thao tác này.',
+  'INVALID_CANCELLATION_REASON':
+      'Vui lòng nhập lý do hủy đơn chi tiết hơn (ít nhất 15 ký tự).',
+  'CANCELLATION_REASON_TOO_LONG': 'Lý do hủy đơn tối đa 255 ký tự.',
   'INVALID_ORDER_TRANSITION': 'Không thể chuyển đơn sang trạng thái này.',
   'INVALID_ORDER_CHANNEL': 'Chỉ đơn online mới thanh toán qua PayOS.',
   'INVALID_FULFILLMENT_TYPE':
@@ -145,6 +158,10 @@ const _messages = <String, String>{
   'INVALID_RATING': 'Số sao phải từ 1 đến 5.',
   'MISSING_FIELDS': 'Vui lòng chọn số sao và nhập bình luận.',
   'NO_PRODUCT': 'Đơn hàng không có sản phẩm.',
+  'INVALID_ID': 'Mã đơn hàng hoặc đánh giá không hợp lệ.',
+  // Lỗi của multer khi upload ảnh đánh giá.
+  'LIMIT_FILE_SIZE': 'Mỗi ảnh tối đa 5 MB.',
+  'LIMIT_UNEXPECTED_FILE': 'Mỗi đánh giá tối đa 5 ảnh.',
 
   // ---- Owner ----
   'STAFF_NOT_FOUND': 'Không tìm thấy nhân viên.',

@@ -21,6 +21,8 @@ class AppTextField extends StatefulWidget {
     this.maxLines = 1,
     this.maxLength,
     this.helperText,
+    this.forceErrorText,
+    this.suffixIcon,
     this.focusNode,
     this.textCapitalization = TextCapitalization.none,
   });
@@ -41,6 +43,12 @@ class AppTextField extends StatefulWidget {
   final int maxLines;
   final int? maxLength;
   final String? helperText;
+
+  /// Lỗi từ máy chủ (ví dụ SĐT đã được đăng ký) — hiện bất kể validator.
+  final String? forceErrorText;
+
+  /// Biểu tượng cuối ô (bỏ qua khi `isPassword` — ô mật khẩu có nút ẩn/hiện).
+  final Widget? suffixIcon;
   final FocusNode? focusNode;
   final TextCapitalization textCapitalization;
 
@@ -57,6 +65,7 @@ class _AppTextFieldState extends State<AppTextField> {
       controller: widget.controller,
       focusNode: widget.focusNode,
       validator: widget.validator,
+      forceErrorText: widget.forceErrorText,
       keyboardType: widget.keyboardType,
       textInputAction: widget.textInputAction,
       onFieldSubmitted: widget.onFieldSubmitted,
@@ -87,7 +96,7 @@ class _AppTextFieldState extends State<AppTextField> {
                 ),
                 onPressed: () => setState(() => _obscured = !_obscured),
               )
-            : null,
+            : widget.suffixIcon,
       ),
     );
   }

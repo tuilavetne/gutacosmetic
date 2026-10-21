@@ -62,6 +62,19 @@ class SessionController extends Notifier<SessionState> {
     state = SessionState.signedIn(token: result.token, user: result.user);
   }
 
+  /// Thay token mới (sau khi đổi mật khẩu — token cũ bị backend vô hiệu),
+  /// giữ nguyên chi nhánh đang chọn.
+  Future<void> renewSession(AuthResult result) async {
+    if (!state.isAuthenticated) return;
+    await _tokens.write(result.token);
+    await _local.writeUser(result.user.toJson());
+    state = SessionState.signedIn(
+      token: result.token,
+      user: result.user,
+      activeStore: state.activeStore,
+    );
+  }
+
   /// Xóa token, user và chi nhánh đang chọn. Giỏ hàng giữ nguyên.
   Future<void> signOut() async {
     state = const SessionState.signedOut();

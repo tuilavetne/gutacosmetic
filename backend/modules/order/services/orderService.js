@@ -8,12 +8,15 @@ const AppError = require("../../../utils/AppError");
 const inventoryService = require("../../stock/services/inventoryService");
 const { runInTransaction } = require("../../stock/services/transactionService");
 const {
+  CANCELLATION_REASON_MAX_LENGTH,
+  CANCELLATION_REASON_MIN_LENGTH,
   DELIVERY_FEE_VND,
   FULFILLMENT_TYPES,
   ORDER_CHANNELS,
   ORDER_STATUSES,
   PAYMENT_METHODS,
   PAYMENT_STATUSES,
+  REFUND_STATUSES,
   USER_ROLES,
 } = require("../../../constants/business");
 
@@ -542,8 +545,48 @@ const updateOnlineStatus = (orderId, nextStatus, manager) => {
   });
 };
 
-const cancelOrder = (orderId, actor, reason = "") =>
+// Khách bắt buộc nhập lý do 15–255 ký tự; nhân viên được để trống.
+const normalizeCancellationReason = (reason, actor) => {
+  const isCustomer = actor.role === USER_ROLES.CUSTOMER;
+
+  if (reason === undefined || reason === null) {
+    reason = "";
+  }
+
+  if (typeof reason !== "string") {
+    throw new AppError(
+      "Vui lòng nhập lý do hủy đơn chi tiết hơn (ít nhất 15 ký tự).",
+      400,
+      "INVALID_CANCELLATION_REASON"
+    );
+  }
+
+  const normalized = reason.normalize("NFC").trim();
+
+  if (isCustomer && normalized.length < CANCELLATION_REASON_MIN_LENGTH) {
+    throw new AppError(
+      "Vui lòng nhập lý do hủy đơn chi tiết hơn (ít nhất 15 ký tự).",
+      400,
+      "INVALID_CANCELLATION_REASON",
+      { minLength: CANCELLATION_REASON_MIN_LENGTH }
+    );
+  }
+
+  if (normalized.length > CANCELLATION_REASON_MAX_LENGTH) {
+    throw new AppError(
+      "Lý do hủy đơn tối đa 255 ký tự.",
+      400,
+      "CANCELLATION_REASON_TOO_LONG",
+      { maxLength: CANCELLATION_REASON_MAX_LENGTH }
+    );
+  }
+
+  return normalized;
+};
+
+const cancelOrder = (orderId, actor, rawReason) =>
   runInTransaction(async (session) => {
+    const reason = normalizeCancellationReason(rawReason, actor);
     const order = await findOrderOrThrow(orderId, session);
 
     if (actor.role === USER_ROLES.CUSTOMER) {
@@ -588,6 +631,14 @@ const cancelOrder = (orderId, actor, reason = "") =>
         session
       );
       order.inventoryReserved = false;
+    }
+
+    // Đơn đã nhận tiền (QR PayOS) vẫn hủy được, cửa hàng hoàn tiền sau.
+    if (
+      order.paymentStatus === PAYMENT_STATUSES.PAID &&
+      (order.refundStatus || REFUND_STATUSES.NONE) === REFUND_STATUSES.NONE
+    ) {
+      order.refundStatus = REFUND_STATUSES.PENDING_REFUND;
     }
 
     order.cancelledBy = actor._id;

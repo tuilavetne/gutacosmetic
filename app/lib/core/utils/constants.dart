@@ -30,8 +30,18 @@ abstract final class AppConstants {
   static const Duration searchDebounce = Duration(milliseconds: 400);
   static const Duration customerSearchDebounce = Duration(milliseconds: 350);
 
+  /// Lý do hủy đơn của khách (backend kiểm tra cùng giới hạn).
+  static const int cancellationReasonMinLength = 15;
+  static const int cancellationReasonMaxLength = 255;
+
+  /// Thời hạn cửa hàng hoàn tiền đơn đã thanh toán bị hủy.
+  static const int refundBusinessDays = 7;
+
   /// PayOS QR có hiệu lực 15 phút.
   static const Duration payosLinkLifetime = Duration(minutes: 15);
+
+  /// Chu kỳ tự hỏi PayOS khi đang mở màn quét QR.
+  static const Duration payosPollInterval = Duration(seconds: 5);
 }
 
 class ProductCategory {

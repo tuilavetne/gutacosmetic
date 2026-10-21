@@ -1,4 +1,5 @@
 const inventoryService = require("../services/inventoryQueryService");
+const { productProjectionFor } = require("../../../utils/productProjection");
 
 const getProductInventory = async (req, res, next) => {
   try {
@@ -9,6 +10,7 @@ const getProductInventory = async (req, res, next) => {
       productIds: req.query.productIds,
       search: req.query.search,
       skinType: req.query.skinType,
+      projection: productProjectionFor(req.user),
     });
 
     res.json({ products });

@@ -40,6 +40,13 @@ const PAYMENT_STATUSES = Object.freeze({
   FAILED: "FAILED",
 });
 
+// Đơn bị hủy sau khi đã nhận tiền cần cửa hàng hoàn tiền thủ công.
+const REFUND_STATUSES = Object.freeze({
+  NONE: "NONE",
+  PENDING_REFUND: "PENDING_REFUND",
+  REFUNDED: "REFUNDED",
+});
+
 const PAYMENT_METHODS = Object.freeze({
   CASH: "CASH",
   CARD: "CARD",
@@ -51,15 +58,21 @@ const PAYMENT_METHODS = Object.freeze({
 
 const DELIVERY_FEE_VND = 25000;
 
+const CANCELLATION_REASON_MIN_LENGTH = 15;
+const CANCELLATION_REASON_MAX_LENGTH = 255;
+
 const values = (constant) => Object.values(constant);
 
 module.exports = {
+  CANCELLATION_REASON_MAX_LENGTH,
+  CANCELLATION_REASON_MIN_LENGTH,
   DELIVERY_FEE_VND,
   FULFILLMENT_TYPES,
   ORDER_CHANNELS,
   ORDER_STATUSES,
   PAYMENT_METHODS,
   PAYMENT_STATUSES,
+  REFUND_STATUSES,
   STORE_TYPES,
   USER_ROLES,
   values,

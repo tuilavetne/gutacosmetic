@@ -42,6 +42,18 @@ void main() {
     expect(order.hasMemberCustomer, isFalse);
   });
 
+  test('Order chấp nhận enum có khoảng trắng thừa (dữ liệu sửa tay)', () {
+    final order = Order.fromJson({
+      ...orderJson(storeId),
+      'status': 'COMPLETED\n',
+      'paymentStatus': ' paid ',
+      'fulfillmentType': 'STORE_PICKUP\r\n',
+    });
+    expect(order.status, OrderStatus.completed);
+    expect(order.paymentStatus, PaymentStatus.paid);
+    expect(order.fulfillmentType, FulfillmentType.storePickup);
+  });
+
   test('Order parse storeId đã populate', () {
     final order = Order.fromJson(
       orderJson({'_id': storeId, 'name': 'GUTA Q1', 'type': 'BRANCH'}),

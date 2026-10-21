@@ -3,6 +3,10 @@ const Order = require("../../../models/Order");
 const RewardRedemption = require("../../../models/RewardRedemption");
 const AppError = require("../../../utils/AppError");
 const {
+  avatarPublicIdFromUrl,
+  cloudinary,
+} = require("../../../config/cloudinary");
+const {
   USER_ROLES,
 } = require("../../../constants/business");
 const {
@@ -72,6 +76,59 @@ const searchCustomers = async (query = "") => {
     }));
 
   return [...registeredCustomers, ...guestCustomers].slice(0, 8);
+};
+
+const checkPhoneAvailable = async (userId, rawPhone) => {
+  const phone = normalizePhone(rawPhone);
+  const existingUser = await User.exists({ phone, _id: { $ne: userId } });
+
+  return { available: !existingUser, phone };
+};
+
+const findUserOrThrow = async (userId) => {
+  const user = await User.findById(userId);
+
+  if (!user) {
+    throw new AppError("Account was not found", 404, "ACCOUNT_NOT_FOUND");
+  }
+
+  return user;
+};
+
+// Xóa ảnh đại diện cũ trên Cloudinary (chỉ ảnh do app upload); lỗi thì bỏ qua.
+const destroyOldAvatar = async (url) => {
+  const publicId = avatarPublicIdFromUrl(url);
+  if (!publicId) return;
+
+  try {
+    await cloudinary.uploader.destroy(publicId);
+  } catch (error) {
+    console.warn(`Could not delete old avatar ${publicId}: ${error.message}`);
+  }
+};
+
+const updateAvatar = async (userId, file) => {
+  if (!file || !file.path) {
+    throw new AppError("Avatar image is required", 400, "AVATAR_REQUIRED");
+  }
+
+  const user = await findUserOrThrow(userId);
+  const oldAvatarUrl = user.avatarUrl;
+  user.avatarUrl = file.path;
+  await user.save();
+  await destroyOldAvatar(oldAvatarUrl);
+
+  return user.toJSON();
+};
+
+const removeAvatar = async (userId) => {
+  const user = await findUserOrThrow(userId);
+  const oldAvatarUrl = user.avatarUrl;
+  user.avatarUrl = "";
+  await user.save();
+  await destroyOldAvatar(oldAvatarUrl);
+
+  return user.toJSON();
 };
 
 const updateProfile = async (userId, payload) => {
@@ -177,7 +234,10 @@ const redeemCustomerPoints = async ({ customerId, manager, note, points, rewardN
 };
 
 module.exports = {
+  checkPhoneAvailable,
   redeemCustomerPoints,
+  removeAvatar,
+  updateAvatar,
   searchCustomers,
   updateProfile,
 };

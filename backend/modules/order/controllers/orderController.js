@@ -72,10 +72,13 @@ const updateOnlineStatus = async (req, res, next) => {
 
 const cancelOrder = async (req, res, next) => {
   try {
-    const order = await orderService.cancelOrder(
+    const cancelledOrder = await orderService.cancelOrder(
       req.params.orderId,
       req.user,
-      req.body.reason
+      req.body?.reason
+    );
+    const order = await payosService.cancelPaymentLinkForCancelledOrder(
+      cancelledOrder
     );
     res.json({ order });
   } catch (error) {

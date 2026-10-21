@@ -6,7 +6,11 @@ const UNIVERSAL_SKIN_TYPE = "Da thường/Mọi loại da";
 
 const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
-const getProducts = ({ search, skinType, category } = {}) => {
+/**
+ * @param {object} filters
+ * @param {string} [projection] - ví dụ "-costPrice" để ẩn giá vốn với khách.
+ */
+const getProducts = ({ search, skinType, category } = {}, projection = "") => {
   const query = { isActive: true };
 
   if (search) {
@@ -21,10 +25,10 @@ const getProducts = ({ search, skinType, category } = {}) => {
     query.category = category;
   }
 
-  return Product.find(query).sort({ createdAt: -1 }).lean();
+  return Product.find(query).select(projection).sort({ createdAt: -1 }).lean();
 };
 
-const getProductById = async (productId) => {
+const getProductById = async (productId, projection = "") => {
   if (!mongoose.isValidObjectId(productId)) {
     throw new AppError("Product ID is invalid", 400, "INVALID_PRODUCT_ID");
   }
@@ -32,7 +36,9 @@ const getProductById = async (productId) => {
   const product = await Product.findOne({
     _id: productId,
     isActive: true,
-  }).lean();
+  })
+    .select(projection)
+    .lean();
 
   if (!product) {
     throw new AppError("Product was not found", 404, "PRODUCT_NOT_FOUND");

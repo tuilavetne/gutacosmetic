@@ -113,6 +113,13 @@ class FlexibleDateTimeConverter implements JsonConverter<DateTime, Object> {
   Object toJson(DateTime value) => value.toUtc().toIso8601String();
 }
 
+/// `readValue` cho trường enum: bỏ khoảng trắng/xuống dòng thừa và đưa về chữ
+/// hoa (dữ liệu sửa tay trong DB, ví dụ `"COMPLETED\n"`).
+Object? readEnumValue(Map<dynamic, dynamic> json, String key) {
+  final value = json[key];
+  return value is String ? value.trim().toUpperCase() : value;
+}
+
 /// Đọc chuỗi bất kể backend trả số, chuỗi hay object populate (lấy `_id`).
 /// Ví dụ `paymentOrderCode` (số) hoặc `Review.orderId`.
 class StringishConverter implements JsonConverter<String, Object> {

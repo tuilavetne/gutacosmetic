@@ -1,10 +1,12 @@
 const mongoose = require("mongoose");
 const {
+  CANCELLATION_REASON_MAX_LENGTH,
   FULFILLMENT_TYPES,
   ORDER_CHANNELS,
   ORDER_STATUSES,
   PAYMENT_METHODS,
   PAYMENT_STATUSES,
+  REFUND_STATUSES,
   values,
 } = require("../constants/business");
 
@@ -175,6 +177,12 @@ const orderSchema = new mongoose.Schema(
       default: PAYMENT_STATUSES.UNPAID,
       index: true,
     },
+    refundStatus: {
+      type: String,
+      enum: values(REFUND_STATUSES),
+      default: REFUND_STATUSES.NONE,
+      index: true,
+    },
     paymentMethod: {
       type: String,
       enum: values(PAYMENT_METHODS),
@@ -246,6 +254,7 @@ const orderSchema = new mongoose.Schema(
     cancellationReason: {
       type: String,
       trim: true,
+      maxlength: CANCELLATION_REASON_MAX_LENGTH,
       default: "",
     },
     statusHistory: {
