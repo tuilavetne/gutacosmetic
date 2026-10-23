@@ -22,16 +22,16 @@ class PosCartLine {
     Product? product,
     int? quantity,
     int? availableStock,
-  }) =>
-      PosCartLine(
-        product: product ?? this.product,
-        quantity: quantity ?? this.quantity,
-        availableStock: availableStock ?? this.availableStock,
-      );
+  }) => PosCartLine(
+    product: product ?? this.product,
+    quantity: quantity ?? this.quantity,
+    availableStock: availableStock ?? this.availableStock,
+  );
 }
 
 class PosCartState {
   const PosCartState({
+    this.storeId,
     this.customer,
     this.customName = '',
     this.customPhone = '',
@@ -39,6 +39,7 @@ class PosCartState {
     this.isSubmitting = false,
   });
 
+  final String? storeId;
   final CustomerSearchResult? customer;
   final String customName;
   final String customPhone;
@@ -62,11 +63,13 @@ class PosCartState {
   String? get customerId => customer?.orderCustomerId;
 
   int get totalItems => items.fold(0, (sum, e) => sum + e.quantity);
+  int get itemCount => items.length;
   int get subtotal => items.fold(0, (sum, e) => sum + e.lineTotal);
 
   bool get isEmpty => items.isEmpty;
 
   PosCartState copyWith({
+    String? storeId,
     CustomerSearchResult? Function()? customer,
     String? customName,
     String? customPhone,
@@ -74,6 +77,7 @@ class PosCartState {
     bool? isSubmitting,
   }) {
     return PosCartState(
+      storeId: storeId ?? this.storeId,
       customer: customer != null ? customer() : this.customer,
       customName: customName ?? this.customName,
       customPhone: customPhone ?? this.customPhone,
@@ -88,7 +92,12 @@ final posCartControllerProvider =
 
 class PosCartController extends Notifier<PosCartState> {
   @override
-  PosCartState build() => const PosCartState();
+  PosCartState build() {
+    // Theo dõi chi nhánh làm việc: Khi đổi chi nhánh hoặc đăng xuất (activeStore thay đổi/null),
+    // provider sẽ tự động khởi tạo lại state mới cho chi nhánh đó, giỏ cũ của chi nhánh trước sẽ mất luôn.
+    final activeStore = ref.watch(activeStoreProvider);
+    return PosCartState(storeId: activeStore?.id);
+  }
 
   void selectCustomer(CustomerSearchResult? customer) {
     state = state.copyWith(
@@ -114,15 +123,27 @@ class PosCartController extends Notifier<PosCartState> {
     );
   }
 
-  /// Thêm hoặc tăng số lượng sản phẩm vào giỏ POS
+  /// Thêm hoặc tăng số lượng sản phẩm vào giỏ POS của chi nhánh đang chọn
   bool addProduct(Product product, int availableStock, {int quantity = 1}) {
+    final activeStore = ref.read(activeStoreProvider);
+    if (activeStore == null) {
+      return false;
+    }
+    if (state.storeId != null && state.storeId != activeStore.id) {
+      state = PosCartState(storeId: activeStore.id);
+    } else if (state.storeId == null) {
+      state = state.copyWith(storeId: activeStore.id);
+    }
+
     if (availableStock <= 0) return false;
 
-    final existingIndex =
-        state.items.indexWhere((e) => e.product.id == product.id);
+    final existingIndex = state.items.indexWhere(
+      (e) => e.product.id == product.id,
+    );
 
-    final currentQty =
-        existingIndex >= 0 ? state.items[existingIndex].quantity : 0;
+    final currentQty = existingIndex >= 0
+        ? state.items[existingIndex].quantity
+        : 0;
     final newQty = currentQty + quantity;
 
     if (newQty > availableStock || newQty > AppConstants.maxCartQuantity) {
@@ -176,6 +197,12 @@ class PosCartController extends Notifier<PosCartState> {
     state = state.copyWith(items: const []);
   }
 
+  /// Reset toàn bộ giỏ hàng và thông tin khách hàng của chi nhánh
+  void reset() {
+    final activeStore = ref.read(activeStoreProvider);
+    state = PosCartState(storeId: activeStore?.id);
+  }
+
   /// Nghiệp vụ 15: Tạo giỏ tạm (PENDING_APPROVAL) - Chưa giữ hàng trong kho
   Future<Order> createDraftOrder() async {
     final activeStore = ref.read(activeStoreProvider);
@@ -201,7 +228,7 @@ class PosCartController extends Notifier<PosCartState> {
       );
 
       final order = await repo.createOfflineOrder(request);
-      clearCart();
+      reset();
       return order;
     } finally {
       state = state.copyWith(isSubmitting: false);
@@ -210,9 +237,34 @@ class PosCartController extends Notifier<PosCartState> {
 
   /// Nghiệp vụ 15: Duyệt giỏ gửi thu ngân (PENDING_PAYMENT) - Lúc này mới tăng reservedStock
   Future<Order> submitAndApproveOrder() async {
-    final order = await createDraftOrder();
-    final repo = ref.read(salesRepositoryProvider);
-    final approvedOrder = await repo.approveOfflineOrder(order.id);
-    return approvedOrder;
+    final activeStore = ref.read(activeStoreProvider);
+    if (activeStore == null) {
+      throw StateError('Chưa chọn chi nhánh làm việc');
+    }
+    if (state.isEmpty) {
+      throw StateError('Giỏ hàng đang trống');
+    }
+
+    state = state.copyWith(isSubmitting: true);
+    try {
+      final repo = ref.read(salesRepositoryProvider);
+      final request = (
+        storeId: activeStore.id,
+        customerId: state.customerId,
+        customerName: state.effectiveCustomerName,
+        customerPhone: state.effectiveCustomerPhone,
+        items: [
+          for (final line in state.items)
+            (productId: line.product.id, quantity: line.quantity),
+        ],
+      );
+
+      final order = await repo.createOfflineOrder(request);
+      final approvedOrder = await repo.approveOfflineOrder(order.id);
+      reset();
+      return approvedOrder;
+    } finally {
+      state = state.copyWith(isSubmitting: false);
+    }
   }
 }

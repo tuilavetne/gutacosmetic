@@ -5,6 +5,7 @@ import '../../../../app/theme.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_messenger.dart';
+import '../../../session/session_controller.dart';
 import '../controllers/pos_cart_controller.dart';
 import 'customer_select_dialog.dart';
 
@@ -22,6 +23,7 @@ class PosCartBottomSheet extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final activeStore = ref.watch(activeStoreProvider);
     final cart = ref.watch(posCartControllerProvider);
     final controller = ref.read(posCartControllerProvider.notifier);
 
@@ -43,14 +45,30 @@ class PosCartBottomSheet extends ConsumerWidget {
               children: [
                 const Icon(Icons.point_of_sale, color: AppColors.primary),
                 const SizedBox(width: 8),
-                Text(
-                  'Giỏ hàng POS (${cart.totalItems})',
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Giỏ hàng POS (${cart.totalItems})',
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      if (activeStore != null)
+                        Text(
+                          'Chi nhánh: ${activeStore.name}',
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: AppColors.muted,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                    ],
                   ),
                 ),
-                const Spacer(),
                 if (!cart.isEmpty)
                   TextButton.icon(
                     icon: const Icon(Icons.delete_sweep_outlined, size: 18),
@@ -103,8 +121,8 @@ class PosCartBottomSheet extends ConsumerWidget {
                         cart.effectiveCustomerPhone.isNotEmpty
                             ? cart.effectiveCustomerPhone
                             : (cart.customer?.isMember == true
-                                ? 'Thành viên (${formatNumber(cart.customer!.points)} điểm)'
-                                : 'Khách vãng lai tại quầy'),
+                                  ? 'Thành viên (${formatNumber(cart.customer!.points)} điểm)'
+                                  : 'Khách vãng lai tại quầy'),
                         style: const TextStyle(
                           color: AppColors.muted,
                           fontSize: 12,
@@ -217,7 +235,9 @@ class PosCartBottomSheet extends ConsumerWidget {
                                 children: [
                                   IconButton(
                                     visualDensity: VisualDensity.compact,
-                                    icon: const Icon(Icons.remove_circle_outline),
+                                    icon: const Icon(
+                                      Icons.remove_circle_outline,
+                                    ),
                                     onPressed: () => controller.updateQuantity(
                                       item.product.id,
                                       item.quantity - 1,
@@ -233,12 +253,13 @@ class PosCartBottomSheet extends ConsumerWidget {
                                   IconButton(
                                     visualDensity: VisualDensity.compact,
                                     icon: const Icon(Icons.add_circle_outline),
-                                    onPressed: item.quantity >= item.availableStock
+                                    onPressed:
+                                        item.quantity >= item.availableStock
                                         ? null
                                         : () => controller.updateQuantity(
-                                              item.product.id,
-                                              item.quantity + 1,
-                                            ),
+                                            item.product.id,
+                                            item.quantity + 1,
+                                          ),
                                   ),
                                 ],
                               ),
@@ -309,7 +330,8 @@ class PosCartBottomSheet extends ConsumerWidget {
                                 ? null
                                 : () async {
                                     try {
-                                      final order = await controller.createDraftOrder();
+                                      final order = await controller
+                                          .createDraftOrder();
                                       if (context.mounted) {
                                         Navigator.pop(context);
                                         showAppSnackBar(
@@ -342,7 +364,8 @@ class PosCartBottomSheet extends ConsumerWidget {
                             loading: cart.isSubmitting,
                             onPressed: () async {
                               try {
-                                final order = await controller.submitAndApproveOrder();
+                                final order = await controller
+                                    .submitAndApproveOrder();
                                 if (context.mounted) {
                                   Navigator.pop(context);
                                   showAppSnackBar(
@@ -361,6 +384,18 @@ class PosCartBottomSheet extends ConsumerWidget {
                           ),
                         ),
                       ],
+                    ),
+                    const SizedBox(height: 8),
+                    SizedBox(
+                      width: double.infinity,
+                      child: TextButton.icon(
+                        icon: const Icon(Icons.add_shopping_cart, size: 16),
+                        label: const Text(
+                          'Tiếp tục chọn thêm sản phẩm vào giỏ',
+                          style: TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                        onPressed: () => Navigator.pop(context),
+                      ),
                     ),
                   ],
                 ),
