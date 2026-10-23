@@ -6,6 +6,7 @@ import '../../../app/routes.dart';
 import '../../../app/theme.dart';
 import '../../../core/widgets/confirm_dialog.dart';
 import '../../session/session_controller.dart';
+import 'controllers/pos_cart_controller.dart';
 import 'pos_screen.dart';
 import 'sales_orders_screen.dart';
 
@@ -33,6 +34,7 @@ class _SalesShellState extends ConsumerState<SalesShell> {
       destructive: true,
     );
     if (ok) {
+      ref.read(posCartControllerProvider.notifier).reset();
       await ref.read(sessionControllerProvider.notifier).signOut();
     }
   }
@@ -44,71 +46,73 @@ class _SalesShellState extends ConsumerState<SalesShell> {
 
     return Scaffold(
       appBar: AppBar(
+        titleSpacing: 12,
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
             Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.storefront, size: 16, color: AppColors.primary),
-                      const SizedBox(width: 6),
-                      Text(
-                        activeStore?.name ?? 'GUTA Cosmetic POS',
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.primary,
+                Flexible(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.storefront, size: 15, color: AppColors.primary),
+                        const SizedBox(width: 5),
+                        Flexible(
+                          child: Text(
+                            activeStore?.name ?? 'GUTA Cosmetic POS',
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.primary,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ],
             ),
             if (user != null)
               Padding(
-                padding: const EdgeInsets.only(top: 3, left: 2),
+                padding: const EdgeInsets.only(top: 2, left: 2),
                 child: Text(
-                  'Nhân viên: ${user.displayName} • Ca bán hàng POS',
+                  'Nhân viên: ${user.displayName} • Ca POS',
                   style: const TextStyle(
                     fontSize: 11,
                     color: AppColors.muted,
-                    fontWeight: FontWeight.normal,
                   ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
           ],
         ),
         actions: [
-          OutlinedButton.icon(
-            style: OutlinedButton.styleFrom(
+          TextButton.icon(
+            style: TextButton.styleFrom(
               visualDensity: VisualDensity.compact,
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              side: const BorderSide(color: AppColors.border),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
+              foregroundColor: AppColors.primary,
             ),
-            icon: const Icon(Icons.swap_horiz, size: 16, color: AppColors.primary),
+            icon: const Icon(Icons.swap_horiz, size: 18),
             label: const Text(
-              'Đổi chi nhánh',
-              style: TextStyle(fontSize: 12, color: AppColors.primary, fontWeight: FontWeight.w600),
+              'Đổi kho',
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
             ),
             onPressed: () => context.push(AppRoutes.selectStore),
           ),
-          const SizedBox(width: 4),
           IconButton(
             tooltip: 'Đăng xuất',
-            icon: const Icon(Icons.logout, color: AppColors.muted),
+            icon: const Icon(Icons.logout, color: AppColors.muted, size: 20),
             onPressed: _logout,
           ),
         ],

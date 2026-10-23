@@ -67,9 +67,9 @@ class _PosScreenState extends ConsumerState<PosScreen> {
     );
     final productsAsync = ref.watch(salesProductsProvider(query));
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: Align(
+    return ColoredBox(
+      color: AppColors.background,
+      child: Align(
         alignment: Alignment.topCenter,
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 960),
@@ -223,6 +223,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                 }
 
                 return ListView.separated(
+                  keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
                   padding: const EdgeInsets.all(12),
                   itemCount: products.length,
                   separatorBuilder: (_, _) => const SizedBox(height: 10),
@@ -350,8 +351,8 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                                           size: 16,
                                         ),
                                         label: const Text(
-                                          'Kho chi nhánh khác',
-                                          style: TextStyle(fontSize: 12),
+                                          'Kho khác',
+                                          style: TextStyle(fontSize: 11),
                                         ),
                                         onPressed: () {
                                           OtherStoresStockDialog.show(
@@ -363,46 +364,131 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                                       ),
                                       const Spacer(),
                                       // Add to POS cart button
-                                      ElevatedButton.icon(
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: AppColors.primary,
-                                          foregroundColor: Colors.white,
-                                          visualDensity: VisualDensity.compact,
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 12,
-                                            vertical: 6,
-                                          ),
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(8),
-                                          ),
-                                        ),
-                                        icon: const Icon(Icons.add_shopping_cart, size: 16),
-                                        label: const Text(
-                                          '+ Giỏ POS',
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                        onPressed: isOutOfStock
-                                            ? null
-                                            : () {
-                                                final added = cartController.addProduct(
-                                                  product,
-                                                  available,
-                                                );
-                                                if (added) {
-                                                  showAppSnackBar(
-                                                    'Đã thêm ${product.name} vào giỏ POS',
-                                                  );
-                                                } else {
-                                                  showAppSnackBar(
-                                                    'Không thể thêm quá số lượng tồn kho ($available)',
-                                                    isError: true,
-                                                  );
-                                                }
-                                              },
-                                      ),
+                                      Builder(
+                                        builder: (_) {
+                                          final inCart = cart.items
+                                              .where((e) => e.product.id == product.id)
+                                              .firstOrNull;
+                                          final inCartQty = inCart?.quantity ?? 0;
+
+                                          if (inCartQty > 0) {
+                                            return Container(
+                                              decoration: BoxDecoration(
+                                                color: AppColors.background,
+                                                borderRadius: BorderRadius.circular(8),
+                                                border: Border.all(
+                                                  color: AppColors.primary.withValues(alpha: 0.3),
+                                                ),
+                                              ),
+                                              child: Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  IconButton(
+                                                    visualDensity: VisualDensity.compact,
+                                                    iconSize: 20,
+                                                    padding: const EdgeInsets.all(4),
+                                                    constraints: const BoxConstraints(
+                                                      minWidth: 32,
+                                                      minHeight: 32,
+                                                    ),
+                                                    icon: const Icon(
+                                                      Icons.remove_circle_outline,
+                                                      color: AppColors.primary,
+                                                    ),
+                                                    onPressed: () {
+                                                      FocusScope.of(context).unfocus();
+                                                      cartController.updateQuantity(
+                                                        product.id,
+                                                        inCartQty - 1,
+                                                      );
+                                                    },
+                                                  ),
+                                                  Padding(
+                                                    padding: const EdgeInsets.symmetric(horizontal: 6),
+                                                    child: Text(
+                                                      '$inCartQty',
+                                                      style: const TextStyle(
+                                                        color: AppColors.primary,
+                                                        fontWeight: FontWeight.bold,
+                                                        fontSize: 14,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  IconButton(
+                                                    visualDensity: VisualDensity.compact,
+                                                    iconSize: 20,
+                                                    padding: const EdgeInsets.all(4),
+                                                    constraints: const BoxConstraints(
+                                                      minWidth: 32,
+                                                      minHeight: 32,
+                                                    ),
+                                                    icon: Icon(
+                                                      Icons.add_circle,
+                                                      color: inCartQty >= available
+                                                          ? AppColors.muted
+                                                          : AppColors.primary,
+                                                    ),
+                                                    onPressed: inCartQty >= available
+                                                        ? null
+                                                        : () {
+                                                            FocusScope.of(context).unfocus();
+                                                            cartController.addProduct(
+                                                              product,
+                                                              available,
+                                                            );
+                                                          },
+                                                  ),
+                                                ],
+                                              ),
+                                            );
+                                          }
+
+                                          return ElevatedButton.icon(
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor: AppColors.primary,
+                                              foregroundColor: Colors.white,
+                                              visualDensity: VisualDensity.compact,
+                                              padding: const EdgeInsets.symmetric(
+                                                horizontal: 12,
+                                                vertical: 6,
+                                              ),
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius: BorderRadius.circular(8),
+                                              ),
+                                            ),
+                                            icon: const Icon(
+                                              Icons.add_shopping_cart,
+                                              size: 16,
+                                            ),
+                                            label: const Text(
+                                              '+ Giỏ POS',
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                            onPressed: isOutOfStock
+                                                ? null
+                                                : () {
+                                                    FocusScope.of(context).unfocus();
+                                                    final added = cartController.addProduct(
+                                                      product,
+                                                      available,
+                                                    );
+                                                    if (added) {
+                                                      showAppSnackBar(
+                                                        'Đã thêm ${product.name} vào giỏ POS',
+                                                      );
+                                                    } else {
+                                                      showAppSnackBar(
+                                                        'Không thể thêm quá số lượng tồn kho ($available)',
+                                                        isError: true,
+                                                      );
+                                                    }
+                                                  },
+                                          );
+                                        },
+                                      )
                                     ],
                                   ),
                                 ],
@@ -417,30 +503,22 @@ class _PosScreenState extends ConsumerState<PosScreen> {
               },
             ),
           ),
-
-            ],
-          ),
-        ),
-      ),
-      bottomNavigationBar: !cart.isEmpty
-          ? Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.08),
-                    blurRadius: 10,
-                    offset: const Offset(0, -3),
+              // Sticky cart bar docked at bottom of column
+              if (!cart.isEmpty)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.08),
+                        blurRadius: 10,
+                        offset: const Offset(0, -3),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-              child: SafeArea(
-                top: false,
-                child: Align(
-                  alignment: Alignment.center,
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 960),
+                  child: SafeArea(
+                    top: false,
                     child: Row(
                       children: [
                         Badge(
@@ -456,14 +534,14 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Text(
-                              'Tạm tính:',
-                              style: TextStyle(fontSize: 11, color: AppColors.muted),
+                            Text(
+                              'Đã chọn ${cart.itemCount} sp (${cart.totalItems} món)',
+                              style: const TextStyle(fontSize: 11, color: AppColors.muted),
                             ),
                             Text(
                               formatVnd(cart.subtotal),
                               style: const TextStyle(
-                                fontSize: 17,
+                                fontSize: 16,
                                 fontWeight: FontWeight.bold,
                                 color: AppColors.primary,
                               ),
@@ -476,16 +554,16 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                             backgroundColor: AppColors.primary,
                             foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 20,
+                              horizontal: 16,
                               vertical: 12,
                             ),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10),
                             ),
                           ),
-                          icon: const Icon(Icons.arrow_forward_rounded),
+                          icon: const Icon(Icons.arrow_forward_rounded, size: 18),
                           label: const Text(
-                            'Xem giỏ POS',
+                            'Xem giỏ & Gửi duyệt',
                             style: TextStyle(fontWeight: FontWeight.bold),
                           ),
                           onPressed: () => PosCartBottomSheet.show(context),
@@ -494,9 +572,10 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                     ),
                   ),
                 ),
-              ),
-            )
-          : null,
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
