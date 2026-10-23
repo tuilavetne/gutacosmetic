@@ -27,6 +27,15 @@ typedef OnlineOrderRequest = ({
   ShippingAddress? shippingAddress,
 });
 
+/// Thông tin tạo đơn offline gửi lên `POST /orders/offline`.
+typedef OfflineOrderRequest = ({
+  String storeId,
+  String? customerId,
+  String customerName,
+  String customerPhone,
+  List<({String productId, int quantity})> items,
+});
+
 class OrderRepository {
   OrderRepository(this._api);
 
@@ -76,6 +85,54 @@ class OrderRepository {
       },
     );
     return PlacedOrder.fromJson(json);
+  }
+
+  /// `POST /orders/offline` — tạo đơn offline tại quầy (trạng thái PENDING_APPROVAL).
+  /// Chỉ kiểm tra còn hàng, chưa giữ hàng trong kho.
+  Future<Order> createOfflineOrder(OfflineOrderRequest request) async {
+    final json = await _api.post(
+      '/orders/offline',
+      data: {
+        'storeId': request.storeId,
+        if (request.customerId != null) 'customerId': request.customerId,
+        'customerName': request.customerName,
+        'customerPhone': request.customerPhone,
+        'items': [
+          for (final item in request.items)
+            {'productId': item.productId, 'quantity': item.quantity},
+        ],
+      },
+    );
+    return Order.fromJson(requireObject(json, 'order'));
+  }
+
+  /// `PATCH /orders/:id/approve` — Sales duyệt giỏ tạm gửi thu ngân (chuyển sang PENDING_PAYMENT).
+  /// Lúc này mới tăng reservedStock và giảm availableStock.
+  Future<Order> approveOfflineOrder(String orderId) async {
+    final json = await _api.patch('/orders/$orderId/approve');
+    return Order.fromJson(requireObject(json, 'order'));
+  }
+
+  /// `GET /orders?channel=OFFLINE` — lấy danh sách đơn offline tại chi nhánh của Sales.
+  Future<List<Order>> fetchOfflineOrders({String? status}) async {
+    final json = await _api.get(
+      '/orders',
+      query: {
+        'channel': 'OFFLINE',
+        if (status != null && status.isNotEmpty) 'status': status,
+      },
+    );
+    final raw = json['orders'];
+    if (raw is! List) return const [];
+    final orders = <Order>[];
+    for (final item in raw.whereType<Map<dynamic, dynamic>>()) {
+      try {
+        orders.add(Order.fromJson(Map<String, dynamic>.from(item)));
+      } catch (e) {
+        debugPrint('Bỏ qua đơn ${item['orderCode'] ?? item['_id']}: $e');
+      }
+    }
+    return orders;
   }
 
   /// `PATCH /orders/:id/cancel` — khách chỉ hủy được đơn đang chờ xác nhận,
