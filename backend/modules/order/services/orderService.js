@@ -401,7 +401,7 @@ const approveOfflineOrder = (orderId, salesUser) => {
 };
 
 const payOfflineOrder = (orderId, paymentMethod, manager, options = {}) => {
-  assertRole(manager, [USER_ROLES.MANAGER]);
+  assertRole(manager, [USER_ROLES.MANAGER, USER_ROLES.SALES]);
 
   if (
     ![
