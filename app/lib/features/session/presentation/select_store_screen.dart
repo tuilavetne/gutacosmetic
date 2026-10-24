@@ -7,6 +7,7 @@ import '../../../app/theme.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/confirm_dialog.dart';
 import '../../../core/widgets/state_views.dart';
+import '../../sales/presentation/controllers/pos_cart_controller.dart';
 import '../../shared/data/store_repository.dart';
 import '../../shared/models/models.dart';
 import '../session_controller.dart';
@@ -34,7 +35,12 @@ class _SelectStoreScreenState extends ConsumerState<SelectStoreScreen> {
   Future<void> _confirm(List<Store> stores) async {
     final store = stores.where((s) => s.id == _selectedId).firstOrNull;
     if (store == null) return;
-    final role = ref.read(sessionControllerProvider).role;
+    final session = ref.read(sessionControllerProvider);
+    final role = session.role;
+    // Nếu đổi sang chi nhánh khác, giỏ hàng POS của chi nhánh cũ sẽ bị xóa hoàn toàn
+    if (session.activeStore?.id != store.id) {
+      ref.read(posCartControllerProvider.notifier).reset();
+    }
     await ref.read(sessionControllerProvider.notifier).setActiveStore(store);
     if (mounted && role != null) context.go(AppRoutes.homeFor(role));
   }
@@ -46,7 +52,10 @@ class _SelectStoreScreenState extends ConsumerState<SelectStoreScreen> {
       message: 'Bạn có chắc muốn đăng xuất?',
       confirmLabel: 'Đăng xuất',
     );
-    if (ok) await ref.read(sessionControllerProvider.notifier).signOut();
+    if (ok) {
+      ref.read(posCartControllerProvider.notifier).reset();
+      await ref.read(sessionControllerProvider.notifier).signOut();
+    }
   }
 
   @override
