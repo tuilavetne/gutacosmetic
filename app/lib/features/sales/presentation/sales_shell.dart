@@ -6,9 +6,11 @@ import '../../../app/routes.dart';
 import '../../../app/theme.dart';
 import '../../../core/widgets/confirm_dialog.dart';
 import '../../session/session_controller.dart';
+import '../data/sales_repository.dart';
 import 'controllers/pos_cart_controller.dart';
 import 'pos_screen.dart';
 import 'sales_orders_screen.dart';
+import 'sales_stock_screen.dart';
 
 class SalesShell extends ConsumerStatefulWidget {
   const SalesShell({super.key});
@@ -23,6 +25,7 @@ class _SalesShellState extends ConsumerState<SalesShell> {
   final _pages = const [
     PosScreen(),
     SalesOrdersScreen(),
+    SalesStockScreen(),
   ];
 
   Future<void> _logout() async {
@@ -43,6 +46,13 @@ class _SalesShellState extends ConsumerState<SalesShell> {
   Widget build(BuildContext context) {
     final user = ref.watch(currentUserProvider);
     final activeStore = ref.watch(activeStoreProvider);
+    // Hết hàng / đã hết hạn: báo trên tab Kho để Sales đề xuất kịp.
+    final criticalAlerts = ref
+            .watch(salesInventoryAlertsProvider)
+            .value
+            ?.where((alert) => alert.isCritical)
+            .length ??
+        0;
 
     return Scaffold(
       appBar: AppBar(
@@ -126,16 +136,29 @@ class _SalesShellState extends ConsumerState<SalesShell> {
         onDestinationSelected: (index) {
           setState(() => _currentIndex = index);
         },
-        destinations: const [
-          NavigationDestination(
+        destinations: [
+          const NavigationDestination(
             icon: Icon(Icons.point_of_sale_outlined),
             selectedIcon: Icon(Icons.point_of_sale, color: AppColors.primary),
             label: 'Bán hàng (POS)',
           ),
-          NavigationDestination(
+          const NavigationDestination(
             icon: Icon(Icons.receipt_long_outlined),
             selectedIcon: Icon(Icons.receipt_long, color: AppColors.primary),
             label: 'Đơn tại quầy',
+          ),
+          NavigationDestination(
+            icon: Badge(
+              isLabelVisible: criticalAlerts > 0,
+              label: Text('$criticalAlerts'),
+              child: const Icon(Icons.inventory_2_outlined),
+            ),
+            selectedIcon: Badge(
+              isLabelVisible: criticalAlerts > 0,
+              label: Text('$criticalAlerts'),
+              child: const Icon(Icons.inventory_2, color: AppColors.primary),
+            ),
+            label: 'Kho',
           ),
         ],
       ),

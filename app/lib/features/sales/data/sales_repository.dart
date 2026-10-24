@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/network/api_client.dart';
 import '../../customer/data/order_repository.dart';
+import '../../session/session_controller.dart';
 import '../../shared/models/models.dart';
 
 final salesRepositoryProvider = Provider<SalesRepository>(
@@ -38,6 +39,23 @@ final salesProductsProvider = FutureProvider.autoDispose
 final salesOrdersProvider = FutureProvider.autoDispose
     .family<List<Order>, String?>((ref, status) {
   return ref.watch(salesRepositoryProvider).fetchOfflineOrders(status: status);
+});
+
+/// Cảnh báo kho (tồn thấp, hết hàng, sắp/đã hết hạn) của chi nhánh đang làm.
+/// Theo dõi chi nhánh để đổi chi nhánh thì tải lại.
+final salesInventoryAlertsProvider =
+    FutureProvider.autoDispose<List<InventoryAlert>>((ref) {
+  ref.watch(activeStoreProvider.select((store) => store?.id));
+  return ref.watch(salesRepositoryProvider).fetchInventoryAlerts();
+});
+
+/// Đề xuất bổ sung hàng của chi nhánh; `null` = tất cả trạng thái.
+final salesRestockRequestsProvider = FutureProvider.autoDispose
+    .family<List<RestockRequest>, RestockStatus?>((ref, status) {
+  ref.watch(activeStoreProvider.select((store) => store?.id));
+  return ref
+      .watch(salesRepositoryProvider)
+      .fetchRestockRequests(status: status);
 });
 
 /// Repository chuyên biệt phục vụ các luồng nghiệp vụ Sales POS
@@ -115,4 +133,39 @@ class SalesRepository {
     return _orders.fetchOrder(orderId);
   }
 
+  /// `GET /inventory/alerts` — backend tự giới hạn theo chi nhánh đang làm.
+  Future<List<InventoryAlert>> fetchInventoryAlerts() async {
+    final json = await _api.get('/inventory/alerts');
+    return parseList(json, 'alerts', InventoryAlert.fromJson);
+  }
+
+  /// `GET /inventory/restock-requests?status=...` (mặc định của backend là OPEN,
+  /// nên luôn gửi `ALL` khi không lọc).
+  Future<List<RestockRequest>> fetchRestockRequests({
+    RestockStatus? status,
+  }) async {
+    final json = await _api.get(
+      '/inventory/restock-requests',
+      query: {'status': status?.apiValue ?? 'ALL'},
+    );
+    return parseList(json, 'requests', RestockRequest.fromJson);
+  }
+
+  /// `POST /inventory/restock-requests` — Sales chỉ đề xuất; Manager quyết định
+  /// nhận hàng hay hủy. Sản phẩm đã có đề xuất đang mở thì backend gộp vào.
+  Future<RestockRequest> createRestockRequest({
+    required String productId,
+    required int quantity,
+    String reason = '',
+  }) async {
+    final json = await _api.post(
+      '/inventory/restock-requests',
+      data: {
+        'productId': productId,
+        'requestedQuantity': quantity,
+        if (reason.trim().isNotEmpty) 'reason': reason.trim(),
+      },
+    );
+    return RestockRequest.fromJson(requireObject(json, 'request'));
+  }
 }
