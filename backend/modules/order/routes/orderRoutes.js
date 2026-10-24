@@ -32,7 +32,7 @@ router.patch(
 );
 router.patch(
   "/:orderId/pay",
-  authorize(USER_ROLES.MANAGER, USER_ROLES.SALES),
+  authorize(USER_ROLES.MANAGER),
   requireAssignedStore,
   orderController.payOfflineOrder
 );

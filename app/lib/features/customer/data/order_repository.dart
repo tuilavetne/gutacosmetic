@@ -87,13 +87,20 @@ class OrderRepository {
     return PlacedOrder.fromJson(json);
   }
 
-  /// `POST /orders/offline` — tạo đơn offline tại quầy (trạng thái PENDING_APPROVAL).
-  /// Chỉ kiểm tra còn hàng, chưa giữ hàng trong kho.
-  Future<Order> createOfflineOrder(OfflineOrderRequest request) async {
+  /// `POST /orders/offline` — tạo đơn offline tại quầy.
+  ///
+  /// Mặc định là giỏ tạm (PENDING_APPROVAL): chỉ kiểm tra còn hàng, chưa giữ kho.
+  /// [submitToCashier] = true thì tạo và gửi thu ngân luôn (PENDING_PAYMENT,
+  /// giữ kho) trong một transaction — thiếu hàng thì không tạo đơn nào.
+  Future<Order> createOfflineOrder(
+    OfflineOrderRequest request, {
+    bool submitToCashier = false,
+  }) async {
     final json = await _api.post(
       '/orders/offline',
       data: {
         'storeId': request.storeId,
+        if (submitToCashier) 'submitToCashier': true,
         if (request.customerId != null) 'customerId': request.customerId,
         'customerName': request.customerName,
         'customerPhone': request.customerPhone,

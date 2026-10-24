@@ -84,10 +84,24 @@ class SalesRepository {
     return _orders.createOfflineOrder(request);
   }
 
+  /// `POST /orders/offline` với `submitToCashier: true`
+  /// Tạo đơn và gửi thu ngân ngay (status: PENDING_PAYMENT, giữ kho) trong một
+  /// transaction. Thiếu hàng thì backend không tạo đơn nào.
+  Future<Order> submitOfflineOrder(OfflineOrderRequest request) {
+    return _orders.createOfflineOrder(request, submitToCashier: true);
+  }
+
   /// `PATCH /orders/:id/approve`
   /// Sales duyệt giỏ tạm gửi sang thu ngân (status: PENDING_PAYMENT). Lúc này mới giữ hàng (tăng reservedStock).
   Future<Order> approveOfflineOrder(String orderId) {
     return _orders.approveOfflineOrder(orderId);
+  }
+
+  /// `PATCH /orders/:id/cancel`
+  /// Hủy đơn tại quầy (khách đổi ý). Đơn đã gửi thu ngân được trả hàng về kho.
+  /// Lý do có thể để trống với nhân viên.
+  Future<Order> cancelOfflineOrder(String orderId, {String reason = ''}) {
+    return _orders.cancelOrder(orderId, reason: reason);
   }
 
   /// `GET /orders?channel=OFFLINE`
@@ -101,26 +115,4 @@ class SalesRepository {
     return _orders.fetchOrder(orderId);
   }
 
-  /// `PATCH /orders/:id/pay`
-  /// Thu ngân / Sales xác nhận thu tiền đơn tại quầy (tiền mặt / PayOS / thẻ)
-  Future<Order> payOfflineOrder(
-    String orderId, {
-    required PaymentMethod paymentMethod,
-    int discountPercent = 0,
-  }) async {
-    final methodString = switch (paymentMethod) {
-      PaymentMethod.cash => 'CASH',
-      PaymentMethod.card => 'CARD',
-      PaymentMethod.bankTransfer => 'BANK_TRANSFER',
-      _ => 'CASH',
-    };
-    final json = await _api.patch(
-      '/orders/$orderId/pay',
-      data: {
-        'paymentMethod': methodString,
-        'discountPercent': discountPercent,
-      },
-    );
-    return Order.fromJson(requireObject(json, 'order'));
-  }
 }

@@ -8,13 +8,16 @@ import 'package:gutacosmetic/features/shared/models/models.dart';
 
 class FakeSalesRepository implements SalesRepository {
   OfflineOrderRequest? lastCreatedRequest;
-  String? lastApprovedOrderId;
+  OfflineOrderRequest? lastSubmittedRequest;
+  int requestCount = 0;
+  Object? submitError;
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 
   @override
   Future<Order> createOfflineOrder(OfflineOrderRequest request) async {
+    requestCount++;
     lastCreatedRequest = request;
     return Order(
       id: 'ord_123',
@@ -26,11 +29,15 @@ class FakeSalesRepository implements SalesRepository {
   }
 
   @override
-  Future<Order> approveOfflineOrder(String orderId) async {
-    lastApprovedOrderId = orderId;
+  Future<Order> submitOfflineOrder(OfflineOrderRequest request) async {
+    requestCount++;
+    if (submitError != null) throw submitError!;
+    lastSubmittedRequest = request;
     return Order(
-      id: orderId,
+      id: 'ord_123',
       orderCode: 'GUTA-ORD-123',
+      storeId: EntityRef(request.storeId),
+      customerName: request.customerName,
       status: OrderStatus.pendingPayment,
     );
   }
@@ -87,7 +94,7 @@ void main() {
     expect(container.read(posCartControllerProvider).isEmpty, isTrue);
   });
 
-  test('submitAndApproveOrder: tạo đơn offline rồi gửi duyệt sang thu ngân với đầy đủ sản phẩm', () async {
+  test('submitAndApproveOrder: tạo và gửi thu ngân trong một request với đầy đủ sản phẩm', () async {
     final fakeRepo = FakeSalesRepository();
     final container = ProviderContainer(
       overrides: [
@@ -107,18 +114,51 @@ void main() {
 
     final approvedOrder = await cart.submitAndApproveOrder();
 
-    expect(fakeRepo.lastCreatedRequest, isNotNull);
-    expect(fakeRepo.lastCreatedRequest!.storeId, 'store1');
-    expect(fakeRepo.lastCreatedRequest!.items.length, 2);
-    expect(fakeRepo.lastCreatedRequest!.items[0].productId, 'p1');
-    expect(fakeRepo.lastCreatedRequest!.items[0].quantity, 2);
-    expect(fakeRepo.lastCreatedRequest!.items[1].productId, 'p2');
-    expect(fakeRepo.lastCreatedRequest!.items[1].quantity, 1);
+    final request = fakeRepo.lastSubmittedRequest;
+    expect(request, isNotNull);
+    expect(request!.storeId, 'store1');
+    expect(request.items.length, 2);
+    expect(request.items[0].productId, 'p1');
+    expect(request.items[0].quantity, 2);
+    expect(request.items[1].productId, 'p2');
+    expect(request.items[1].quantity, 1);
 
-    expect(fakeRepo.lastApprovedOrderId, 'ord_123');
+    // Chỉ một request, không tạo giỏ tạm riêng rồi mới duyệt
+    expect(fakeRepo.requestCount, 1);
+    expect(fakeRepo.lastCreatedRequest, isNull);
     expect(approvedOrder.status, OrderStatus.pendingPayment);
 
     // Giỏ hàng được làm mới sau khi gửi thành công
+    expect(container.read(posCartControllerProvider).isEmpty, isTrue);
+  });
+
+  test('submitAndApproveOrder lỗi (thiếu hàng): giữ nguyên giỏ, gửi lại không tạo đơn thừa', () async {
+    final fakeRepo = FakeSalesRepository()
+      ..submitError = Exception('INSUFFICIENT_STOCK');
+    final container = ProviderContainer(
+      overrides: [
+        activeStoreProvider.overrideWithValue(const Store(id: 'store1')),
+        salesRepositoryProvider.overrideWithValue(fakeRepo),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    final cart = container.read(posCartControllerProvider.notifier);
+    cart.addProduct(const Product(id: 'p1', name: 'Serum', price: 200000), 5);
+
+    await expectLater(cart.submitAndApproveOrder(), throwsException);
+
+    final state = container.read(posCartControllerProvider);
+    expect(state.items.length, 1);
+    expect(state.isSubmitting, isFalse);
+    expect(fakeRepo.requestCount, 1);
+    expect(fakeRepo.lastCreatedRequest, isNull);
+
+    // Gửi lại sau khi hết lỗi: vẫn chỉ đúng một đơn được tạo
+    fakeRepo.submitError = null;
+    await cart.submitAndApproveOrder();
+    expect(fakeRepo.requestCount, 2);
+    expect(fakeRepo.lastSubmittedRequest!.items.single.productId, 'p1');
     expect(container.read(posCartControllerProvider).isEmpty, isTrue);
   });
 }
