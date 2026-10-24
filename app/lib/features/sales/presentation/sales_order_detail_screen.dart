@@ -3,9 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../app/theme.dart';
+import '../../../core/network/api_exception.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_messenger.dart';
+import '../../../core/widgets/confirm_dialog.dart';
 import '../../../core/widgets/state_views.dart';
 import '../../customer/presentation/widgets/order_widgets.dart';
 import '../../shared/models/models.dart';
@@ -76,124 +78,48 @@ class _SalesOrderDetailScreenState
     } catch (e) {
       if (mounted) {
         setState(() => _actionLoading = false);
-        showAppSnackBar('Lỗi khi duyệt đơn: $e', isError: true);
+        showAppSnackBar('Lỗi khi duyệt đơn: ${errorMessageOf(e)}', isError: true);
       }
     }
   }
 
-  Future<void> _payOrder() async {
+  /// Khách đổi ý: hủy giỏ tạm, hoặc rút đơn đã gửi thu ngân (trả hàng về kho).
+  Future<void> _cancel() async {
     if (_order == null || _actionLoading) return;
+    final reserved = _order!.status == OrderStatus.pendingPayment;
 
-    PaymentMethod selectedMethod = PaymentMethod.cash;
-
-    final confirmed = await showDialog<PaymentMethod>(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: const Row(
-            children: [
-              Icon(Icons.point_of_sale, color: AppColors.primary),
-              SizedBox(width: 10),
-              Text(
-                'Thu tiền tại quầy',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-            ],
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text('Tổng số tiền cần thu:',
-                        style: TextStyle(fontWeight: FontWeight.w600)),
-                    Text(
-                      formatVnd(_order!.totalPrice),
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 17,
-                        color: AppColors.primary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                'Chọn phương thức thanh toán:',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-              ),
-              const SizedBox(height: 10),
-              _PaymentOptionCard(
-                icon: Icons.payments_outlined,
-                title: 'Tiền mặt (CASH)',
-                subtitle: 'Khách đưa tiền mặt trực tiếp tại quầy',
-                isSelected: selectedMethod == PaymentMethod.cash,
-                onTap: () => setDialogState(() => selectedMethod = PaymentMethod.cash),
-              ),
-              const SizedBox(height: 8),
-              _PaymentOptionCard(
-                icon: Icons.qr_code_2_outlined,
-                title: 'Chuyển khoản QR PayOS',
-                subtitle: 'Khách chuyển khoản ngân hàng qua mã QR',
-                isSelected: selectedMethod == PaymentMethod.bankTransfer,
-                onTap: () => setDialogState(() => selectedMethod = PaymentMethod.bankTransfer),
-              ),
-              const SizedBox(height: 8),
-              _PaymentOptionCard(
-                icon: Icons.credit_card_outlined,
-                title: 'Quẹt thẻ (POS Card)',
-                subtitle: 'Thẻ Visa / MasterCard / ATM nội địa',
-                isSelected: selectedMethod == PaymentMethod.card,
-                onTap: () => setDialogState(() => selectedMethod = PaymentMethod.card),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Để sau'),
-            ),
-            FilledButton.icon(
-              icon: const Icon(Icons.check, size: 18),
-              label: const Text('Xác nhận đã thu tiền'),
-              onPressed: () => Navigator.pop(ctx, selectedMethod),
-            ),
-          ],
-        ),
-      ),
+    final reason = await showReasonDialog(
+      context,
+      title: 'Hủy đơn ${_order!.orderCode}?',
+      message: reserved
+          ? 'Đơn đang chờ thu ngân. Hủy đơn sẽ trả lại hàng đang giữ về kho.'
+          : 'Giỏ tạm sẽ bị hủy và không gửi sang thu ngân.',
+      confirmLabel: 'Hủy đơn',
+      hint: 'Lý do (không bắt buộc), ví dụ: khách đổi ý',
+      maxLength: 255,
     );
-
-    if (confirmed == null) return;
+    if (reason == null) return;
 
     setState(() => _actionLoading = true);
     try {
-      final updated = await ref.read(salesRepositoryProvider).payOfflineOrder(
-            _order!.id,
-            paymentMethod: confirmed,
-          );
+      final updated = await ref
+          .read(salesRepositoryProvider)
+          .cancelOfflineOrder(_order!.id, reason: reason);
       if (mounted) {
         setState(() {
           _order = updated;
           _actionLoading = false;
         });
         showAppSnackBar(
-          'Đã xác nhận thu tiền thành công! Đơn hàng đã hoàn tất và khách được cộng điểm.',
+          reserved
+              ? 'Đã hủy đơn và trả hàng về kho.'
+              : 'Đã hủy giỏ tạm.',
         );
       }
     } catch (e) {
       if (mounted) {
         setState(() => _actionLoading = false);
-        showAppSnackBar('Lỗi khi xác nhận thanh toán: $e', isError: true);
+        showAppSnackBar('Lỗi khi hủy đơn: ${errorMessageOf(e)}', isError: true);
       }
     }
   }
@@ -218,9 +144,6 @@ class _SalesOrderDetailScreenState
     }
 
     final order = _order!;
-    final isPendingApproval = order.status == OrderStatus.pendingApproval;
-    final isPendingPayment = order.status == OrderStatus.pendingPayment;
-    final isCompleted = order.status == OrderStatus.completed;
     final isMember = (order.customerId?.id ?? '').isNotEmpty;
 
     return Scaffold(
@@ -633,86 +556,104 @@ class _SalesOrderDetailScreenState
           ),
         ),
       ),
-      bottomNavigationBar: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          border: Border(top: BorderSide(color: AppColors.border)),
+      bottomNavigationBar: _buildActionBar(order),
+    );
+  }
+
+  /// Thanh thao tác của Sales. Sales không thu tiền: đơn đã gửi thu ngân chỉ
+  /// còn nút hủy (khách đổi ý); đơn đã hủy thì không hiện thanh nào.
+  Widget? _buildActionBar(Order order) {
+    final actions = switch (order.status) {
+      OrderStatus.pendingApproval => [
+        _cancelButton('Hủy giỏ'),
+        const SizedBox(width: 12),
+        Expanded(
+          child: AppButton(
+            label: 'Duyệt giỏ gửi sang thu ngân (Giữ kho)',
+            icon: Icons.check_circle_outline,
+            loading: _actionLoading,
+            onPressed: _approve,
+          ),
         ),
-        child: Align(
-          alignment: Alignment.center,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 860),
-            child: Row(
+      ],
+      OrderStatus.pendingPayment => [
+        const Icon(Icons.hourglass_top, color: Color(0xFF2563EB)),
+        const SizedBox(width: 8),
+        const Expanded(
+          child: Text(
+            'Đã gửi sang thu ngân, chờ Quản lý thu tiền.',
+            style: TextStyle(
+              color: Color(0xFF2563EB),
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        _cancelButton('Hủy đơn'),
+      ],
+      OrderStatus.completed => [
+        Expanded(
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            decoration: BoxDecoration(
+              color: AppColors.success.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: AppColors.success.withValues(alpha: 0.3),
+              ),
+            ),
+            child: const Row(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                if (isPendingApproval) ...[
-                  Expanded(
-                    child: AppButton(
-                      label: 'Duyệt giỏ gửi sang thu ngân (Giữ kho)',
-                      icon: Icons.check_circle_outline,
-                      loading: _actionLoading,
-                      onPressed: _approve,
-                    ),
+                Icon(Icons.check_circle, color: AppColors.success, size: 20),
+                SizedBox(width: 8),
+                Text(
+                  'Đơn hàng đã thanh toán & hoàn tất thành công',
+                  style: TextStyle(
+                    color: AppColors.success,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
                   ),
-                ] else if (isPendingPayment) ...[
-                  Expanded(
-                    child: FilledButton.icon(
-                      style: FilledButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        minimumSize: const Size(0, 48),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      icon: const Icon(Icons.point_of_sale),
-                      label: const Text(
-                        'Thu tiền & Hoàn tất đơn tại quầy',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      onPressed: _actionLoading ? null : _payOrder,
-                    ),
-                  ),
-                ] else if (isCompleted) ...[
-                  Expanded(
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      decoration: BoxDecoration(
-                        color: AppColors.success.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: AppColors.success.withValues(alpha: 0.3),
-                        ),
-                      ),
-                      child: const Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.check_circle,
-                            color: AppColors.success,
-                            size: 20,
-                          ),
-                          SizedBox(width: 8),
-                          Text(
-                            'Đơn hàng đã thanh toán & hoàn tất thành công',
-                            style: TextStyle(
-                              color: AppColors.success,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
+                ),
               ],
             ),
           ),
         ),
+      ],
+      _ => null,
+    };
+    if (actions == null) return null;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        border: Border(top: BorderSide(color: AppColors.border)),
       ),
+      child: SafeArea(
+        top: false,
+        // heightFactor: 1 — thiếu nó Align giãn hết chiều cao Scaffold dành
+        // cho bottomNavigationBar và đè mất nội dung đơn.
+        child: Align(
+          heightFactor: 1,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 860),
+            child: Row(children: actions),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _cancelButton(String label) {
+    return OutlinedButton(
+      style: OutlinedButton.styleFrom(
+        foregroundColor: AppColors.accent,
+        side: const BorderSide(color: AppColors.accent),
+        minimumSize: const Size(0, 48),
+      ),
+      onPressed: _actionLoading ? null : _cancel,
+      child: Text(label),
     );
   }
 
@@ -792,79 +733,6 @@ class _SalesOrderDetailScreenState
           ),
         ),
       ],
-    );
-  }
-}
-
-class _PaymentOptionCard extends StatelessWidget {
-  const _PaymentOptionCard({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(10),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? AppColors.primary.withValues(alpha: 0.08)
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(
-            color: isSelected ? AppColors.primary : AppColors.border,
-            width: isSelected ? 1.5 : 1,
-          ),
-        ),
-        child: Row(
-          children: [
-            Icon(
-              icon,
-              color: isSelected ? AppColors.primary : AppColors.muted,
-              size: 22,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 13,
-                      color: isSelected ? AppColors.primary : AppColors.ink,
-                    ),
-                  ),
-                  Text(
-                    subtitle,
-                    style: const TextStyle(
-                      fontSize: 11,
-                      color: AppColors.muted,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            if (isSelected)
-              const Icon(Icons.check_circle, color: AppColors.primary, size: 20)
-            else
-              const Icon(Icons.circle_outlined, color: AppColors.border, size: 20),
-          ],
-        ),
-      ),
     );
   }
 }

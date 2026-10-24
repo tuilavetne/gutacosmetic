@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../../app/theme.dart';
+import '../../../../core/network/api_exception.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_messenger.dart';
@@ -341,7 +342,7 @@ class PosCartBottomSheet extends ConsumerWidget {
                                     } catch (e) {
                                       if (context.mounted) {
                                         showAppSnackBar(
-                                          'Lỗi lưu giỏ tạm: $e',
+                                          'Lỗi lưu giỏ tạm: ${errorMessageOf(e)}',
                                           isError: true,
                                         );
                                       }
@@ -375,7 +376,7 @@ class PosCartBottomSheet extends ConsumerWidget {
                               } catch (e) {
                                 if (context.mounted) {
                                   showAppSnackBar(
-                                    'Lỗi duyệt đơn: $e',
+                                    'Lỗi duyệt đơn: ${errorMessageOf(e)}',
                                     isError: true,
                                   );
                                 }

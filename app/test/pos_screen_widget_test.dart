@@ -11,30 +11,19 @@ import 'package:gutacosmetic/features/shared/models/models.dart';
 import 'package:material_ui/material_ui.dart';
 
 class _FakeSalesRepository implements SalesRepository {
-  OfflineOrderRequest? lastCreatedRequest;
-  String? lastApprovedOrderId;
+  OfflineOrderRequest? lastSubmittedRequest;
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 
   @override
-  Future<Order> createOfflineOrder(OfflineOrderRequest request) async {
-    lastCreatedRequest = request;
+  Future<Order> submitOfflineOrder(OfflineOrderRequest request) async {
+    lastSubmittedRequest = request;
     return Order(
       id: 'ord_pos_1',
       orderCode: 'ORD-POS-1',
       storeId: EntityRef(request.storeId),
       customerName: request.customerName,
-      status: OrderStatus.pendingApproval,
-    );
-  }
-
-  @override
-  Future<Order> approveOfflineOrder(String orderId) async {
-    lastApprovedOrderId = orderId;
-    return Order(
-      id: orderId,
-      orderCode: 'ORD-POS-1',
       status: OrderStatus.pendingPayment,
     );
   }
@@ -156,16 +145,15 @@ void main() {
     await tester.tap(find.text('Duyệt gửi thu ngân'));
     await tester.pumpAndSettle();
 
-    // Xác nhận đã gọi tạo đơn với đủ 2 loại sản phẩm và gửi duyệt sang thu ngân
-    expect(fakeRepo.lastCreatedRequest, isNotNull);
-    expect(fakeRepo.lastCreatedRequest!.storeId, 's1');
-    expect(fakeRepo.lastCreatedRequest!.items.length, 2);
-    expect(fakeRepo.lastCreatedRequest!.items[0].productId, 'p1');
-    expect(fakeRepo.lastCreatedRequest!.items[0].quantity, 2);
-    expect(fakeRepo.lastCreatedRequest!.items[1].productId, 'p2');
-    expect(fakeRepo.lastCreatedRequest!.items[1].quantity, 1);
-
-    expect(fakeRepo.lastApprovedOrderId, 'ord_pos_1');
+    // Xác nhận đã tạo và gửi thu ngân đơn với đủ 2 loại sản phẩm
+    final request = fakeRepo.lastSubmittedRequest;
+    expect(request, isNotNull);
+    expect(request!.storeId, 's1');
+    expect(request.items.length, 2);
+    expect(request.items[0].productId, 'p1');
+    expect(request.items[0].quantity, 2);
+    expect(request.items[1].productId, 'p2');
+    expect(request.items[1].quantity, 1);
 
     // Bottom sheet đóng lại và giỏ được reset
     expect(find.text('Xem giỏ & Gửi duyệt'), findsNothing);

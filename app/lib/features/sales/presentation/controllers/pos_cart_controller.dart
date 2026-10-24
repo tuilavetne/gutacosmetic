@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/utils/constants.dart';
+import '../../../customer/data/order_repository.dart';
 import '../../../session/session_controller.dart';
 import '../../../shared/models/models.dart';
 import '../../data/sales_repository.dart';
@@ -204,7 +205,20 @@ class PosCartController extends Notifier<PosCartState> {
   }
 
   /// Nghiệp vụ 15: Tạo giỏ tạm (PENDING_APPROVAL) - Chưa giữ hàng trong kho
-  Future<Order> createDraftOrder() async {
+  Future<Order> createDraftOrder() =>
+      _submit((repo, request) => repo.createOfflineOrder(request));
+
+  /// Nghiệp vụ 15: Duyệt giỏ gửi thu ngân (PENDING_PAYMENT) - Giữ kho ngay.
+  ///
+  /// Tạo và gửi thu ngân trong một request: nếu thiếu hàng thì backend không
+  /// tạo đơn nào và giỏ được giữ nguyên để Sales chỉnh rồi gửi lại.
+  Future<Order> submitAndApproveOrder() =>
+      _submit((repo, request) => repo.submitOfflineOrder(request));
+
+  Future<Order> _submit(
+    Future<Order> Function(SalesRepository repo, OfflineOrderRequest request)
+    send,
+  ) async {
     final activeStore = ref.read(activeStoreProvider);
     if (activeStore == null) {
       throw StateError('Chưa chọn chi nhánh làm việc');
@@ -215,7 +229,6 @@ class PosCartController extends Notifier<PosCartState> {
 
     state = state.copyWith(isSubmitting: true);
     try {
-      final repo = ref.read(salesRepositoryProvider);
       final request = (
         storeId: activeStore.id,
         customerId: state.customerId,
@@ -227,42 +240,9 @@ class PosCartController extends Notifier<PosCartState> {
         ],
       );
 
-      final order = await repo.createOfflineOrder(request);
+      final order = await send(ref.read(salesRepositoryProvider), request);
       reset();
       return order;
-    } finally {
-      state = state.copyWith(isSubmitting: false);
-    }
-  }
-
-  /// Nghiệp vụ 15: Duyệt giỏ gửi thu ngân (PENDING_PAYMENT) - Lúc này mới tăng reservedStock
-  Future<Order> submitAndApproveOrder() async {
-    final activeStore = ref.read(activeStoreProvider);
-    if (activeStore == null) {
-      throw StateError('Chưa chọn chi nhánh làm việc');
-    }
-    if (state.isEmpty) {
-      throw StateError('Giỏ hàng đang trống');
-    }
-
-    state = state.copyWith(isSubmitting: true);
-    try {
-      final repo = ref.read(salesRepositoryProvider);
-      final request = (
-        storeId: activeStore.id,
-        customerId: state.customerId,
-        customerName: state.effectiveCustomerName,
-        customerPhone: state.effectiveCustomerPhone,
-        items: [
-          for (final line in state.items)
-            (productId: line.product.id, quantity: line.quantity),
-        ],
-      );
-
-      final order = await repo.createOfflineOrder(request);
-      final approvedOrder = await repo.approveOfflineOrder(order.id);
-      reset();
-      return approvedOrder;
     } finally {
       state = state.copyWith(isSubmitting: false);
     }

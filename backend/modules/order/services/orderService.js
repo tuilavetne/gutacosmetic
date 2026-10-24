@@ -331,13 +331,21 @@ const createOnlineOrder = async (payload, customer) => {
   });
 };
 
+// `submitToCashier: true` tạo đơn và gửi thu ngân (giữ kho) trong cùng một
+// transaction: thiếu hàng thì không tạo đơn nào, tránh để lại giỏ tạm mồ côi.
 const createOfflineOrder = async (payload, salesUser) => {
   assertRole(salesUser, [USER_ROLES.SALES]);
   assertAssignedStore(salesUser, payload.storeId);
+  const submitToCashier = payload.submitToCashier === true;
 
   return runInTransaction(async (session) => {
     const items = await buildOrderItems(payload.items, session);
-    await inventoryService.assertAvailableStock(payload.storeId, items, session);
+
+    if (submitToCashier) {
+      await inventoryService.reserveStock(payload.storeId, items, session);
+    } else {
+      await inventoryService.assertAvailableStock(payload.storeId, items, session);
+    }
 
     const order = new Order({
       orderCode: generateOrderCode(),
@@ -362,6 +370,17 @@ const createOfflineOrder = async (payload, salesUser) => {
         },
       ],
     });
+
+    if (submitToCashier) {
+      order.inventoryReserved = true;
+      order.approvedBySalesId = salesUser._id;
+      appendStatus(
+        order,
+        ORDER_STATUSES.PENDING_PAYMENT,
+        salesUser._id,
+        "Sales approved order and sent it to Manager"
+      );
+    }
 
     await order.save({ session });
     return order;
@@ -400,8 +419,9 @@ const approveOfflineOrder = (orderId, salesUser) => {
   });
 };
 
+// Sales không thu tiền: chỉ Manager/Thu ngân xác nhận thanh toán đơn tại quầy.
 const payOfflineOrder = (orderId, paymentMethod, manager, options = {}) => {
-  assertRole(manager, [USER_ROLES.MANAGER, USER_ROLES.SALES]);
+  assertRole(manager, [USER_ROLES.MANAGER]);
 
   if (
     ![
@@ -609,6 +629,18 @@ const cancelOrder = (orderId, actor, rawReason) =>
         );
       }
     } else if ([USER_ROLES.MANAGER, USER_ROLES.SALES].includes(actor.role)) {
+      // Sales chỉ phụ trách đơn tại quầy; đơn online do Manager xử lý.
+      if (
+        actor.role === USER_ROLES.SALES &&
+        order.channel !== ORDER_CHANNELS.OFFLINE
+      ) {
+        throw new AppError(
+          "Sales can only cancel in-store orders",
+          403,
+          "FORBIDDEN"
+        );
+      }
+
       assertAssignedStore(actor, order.storeId);
     } else {
       assertRole(actor, [USER_ROLES.OWNER]);
