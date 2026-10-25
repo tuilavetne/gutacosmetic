@@ -41,6 +41,102 @@ class FakeSalesRepository implements SalesRepository {
       status: OrderStatus.pendingPayment,
     );
   }
+
+  // --- Sửa giỏ tạm ---
+  final updatedDrafts = <(String, OfflineOrderRequest)>[];
+  final submittedDrafts = <(String, OfflineOrderRequest)>[];
+  List<String>? lastInventoryProductIds;
+  List<ProductInventory> inventories = const [];
+
+  @override
+  Future<List<ProductInventory>> fetchProductsWithInventory({
+    String? search,
+    String? category,
+    String? skinType,
+    List<String>? productIds,
+  }) async {
+    lastInventoryProductIds = productIds;
+    return inventories;
+  }
+
+  @override
+  Future<Order> updateDraftOrder(
+    String orderId,
+    OfflineOrderRequest request,
+  ) async {
+    requestCount++;
+    updatedDrafts.add((orderId, request));
+    return Order(
+      id: orderId,
+      orderCode: 'GUTA-DRAFT',
+      status: OrderStatus.pendingApproval,
+    );
+  }
+
+  @override
+  Future<Order> submitDraftOrder(
+    String orderId,
+    OfflineOrderRequest request,
+  ) async {
+    requestCount++;
+    submittedDrafts.add((orderId, request));
+    return Order(
+      id: orderId,
+      orderCode: 'GUTA-DRAFT',
+      status: OrderStatus.pendingPayment,
+    );
+  }
+}
+
+const _store = Store(id: 'store1');
+const _serum = Product(id: 'p1', name: 'Serum', price: 200000);
+const _toner = Product(id: 'p2', name: 'Toner', price: 150000);
+
+/// Giỏ tạm đã lưu: 2 Serum cho khách thành viên.
+final _draft = Order(
+  id: 'draft_1',
+  orderCode: 'GUTA-DRAFT',
+  channel: OrderChannel.offline,
+  status: OrderStatus.pendingApproval,
+  customerId: const EntityRef(
+    'cus_1',
+    AppUser(
+      id: 'cus_1',
+      fullName: 'Chị Lan',
+      role: UserRole.customer,
+      phone: '0909000003',
+      points: 12,
+    ),
+  ),
+  customerName: 'Chị Lan',
+  customerPhone: '0909000003',
+  items: const [
+    OrderItem(
+      productId: EntityRef('p1'),
+      name: 'Serum',
+      quantity: 2,
+      unitPrice: 200000,
+      lineTotal: 400000,
+    ),
+  ],
+);
+
+(ProviderContainer, FakeSalesRepository) _editingContainer() {
+  final repo = FakeSalesRepository()
+    ..inventories = const [
+      ProductInventory(
+        product: _serum,
+        inventories: [StoreStock(store: _store, availableStock: 7)],
+      ),
+    ];
+  final container = ProviderContainer(
+    overrides: [
+      activeStoreProvider.overrideWithValue(_store),
+      salesRepositoryProvider.overrideWithValue(repo),
+    ],
+  );
+  addTearDown(container.dispose);
+  return (container, repo);
 }
 
 void main() {
@@ -160,5 +256,82 @@ void main() {
     expect(fakeRepo.requestCount, 2);
     expect(fakeRepo.lastSubmittedRequest!.items.single.productId, 'p1');
     expect(container.read(posCartControllerProvider).isEmpty, isTrue);
+  });
+
+  group('Sửa giỏ tạm', () {
+    test(
+      'loadDraft: nạp sản phẩm, tồn kho mới nhất và khách thành viên',
+      () async {
+        final (container, repo) = _editingContainer();
+        final cart = container.read(posCartControllerProvider.notifier);
+
+        await cart.loadDraft(_draft);
+
+        final state = container.read(posCartControllerProvider);
+        expect(repo.lastInventoryProductIds, ['p1']);
+        expect(state.isEditingDraft, isTrue);
+        expect(state.editingOrderCode, 'GUTA-DRAFT');
+        expect(state.items.single.quantity, 2);
+        expect(state.items.single.availableStock, 7);
+        // Khách thành viên giữ nguyên để vẫn được tích điểm
+        expect(state.customerId, 'cus_1');
+        expect(state.effectiveCustomerName, 'Chị Lan');
+      },
+    );
+
+    test(
+      'thêm sản phẩm rồi lưu: cập nhật đúng giỏ tạm cũ, không tạo đơn mới',
+      () async {
+        final (container, repo) = _editingContainer();
+        final cart = container.read(posCartControllerProvider.notifier);
+
+        await cart.loadDraft(_draft);
+        expect(cart.addProduct(_toner, 5), isTrue);
+        final order = await cart.createDraftOrder();
+
+        expect(repo.lastCreatedRequest, isNull);
+        final (orderId, request) = repo.updatedDrafts.single;
+        expect(orderId, 'draft_1');
+        expect(order.id, 'draft_1');
+        expect(request.items.map((i) => (i.productId, i.quantity)), [
+          ('p1', 2),
+          ('p2', 1),
+        ]);
+        expect(request.customerId, 'cus_1');
+        // Lưu xong thì thoát chế độ sửa
+        final state = container.read(posCartControllerProvider);
+        expect(state.isEmpty, isTrue);
+        expect(state.isEditingDraft, isFalse);
+      },
+    );
+
+    test('gửi thu ngân khi đang sửa: gửi chính giỏ tạm đó', () async {
+      final (container, repo) = _editingContainer();
+      final cart = container.read(posCartControllerProvider.notifier);
+
+      await cart.loadDraft(_draft);
+      cart.updateQuantity('p1', 3);
+      final order = await cart.submitAndApproveOrder();
+
+      expect(repo.lastSubmittedRequest, isNull);
+      final (orderId, request) = repo.submittedDrafts.single;
+      expect(orderId, 'draft_1');
+      expect(request.items.single.quantity, 3);
+      expect(order.status, OrderStatus.pendingPayment);
+    });
+
+    test('reset (thôi sửa): giỏ mới tạo đơn mới như bình thường', () async {
+      final (container, repo) = _editingContainer();
+      final cart = container.read(posCartControllerProvider.notifier);
+
+      await cart.loadDraft(_draft);
+      cart.reset();
+      expect(container.read(posCartControllerProvider).isEditingDraft, isFalse);
+
+      cart.addProduct(_toner, 5);
+      await cart.createDraftOrder();
+      expect(repo.updatedDrafts, isEmpty);
+      expect(repo.lastCreatedRequest!.items.single.productId, 'p2');
+    });
   });
 }

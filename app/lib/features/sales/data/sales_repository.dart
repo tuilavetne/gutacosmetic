@@ -84,6 +84,7 @@ class SalesRepository {
     String? search,
     String? category,
     String? skinType,
+    List<String>? productIds,
   }) async {
     final json = await _api.get(
       '/inventory/products',
@@ -91,6 +92,8 @@ class SalesRepository {
         if (search != null && search.isNotEmpty) 'search': search,
         if (category != null && category.isNotEmpty) 'category': category,
         if (skinType != null && skinType.isNotEmpty) 'skinType': skinType,
+        if (productIds != null && productIds.isNotEmpty)
+          'productIds': productIds.join(','),
       },
     );
     return parseList(json, 'products', ProductInventory.fromJson);
@@ -107,6 +110,17 @@ class SalesRepository {
   /// transaction. Thiếu hàng thì backend không tạo đơn nào.
   Future<Order> submitOfflineOrder(OfflineOrderRequest request) {
     return _orders.createOfflineOrder(request, submitToCashier: true);
+  }
+
+  /// `PATCH /orders/:id/items` — lưu lại giỏ tạm sau khi Sales thêm/bớt sản phẩm.
+  Future<Order> updateDraftOrder(String orderId, OfflineOrderRequest request) {
+    return _orders.updateOfflineOrder(orderId, request);
+  }
+
+  /// `PATCH /orders/:id/items` với `submitToCashier: true` — lưu giỏ tạm đã sửa
+  /// và gửi thu ngân luôn (giữ kho).
+  Future<Order> submitDraftOrder(String orderId, OfflineOrderRequest request) {
+    return _orders.updateOfflineOrder(orderId, request, submitToCashier: true);
   }
 
   /// `PATCH /orders/:id/approve`

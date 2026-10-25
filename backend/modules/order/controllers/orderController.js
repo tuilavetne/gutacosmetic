@@ -29,6 +29,19 @@ const createOfflineOrder = async (req, res, next) => {
   }
 };
 
+const updateOfflineOrder = async (req, res, next) => {
+  try {
+    const order = await orderService.updateOfflineOrder(
+      req.params.orderId,
+      req.body,
+      req.user
+    );
+    res.json({ order });
+  } catch (error) {
+    next(error);
+  }
+};
+
 const approveOfflineOrder = async (req, res, next) => {
   try {
     const order = await orderService.approveOfflineOrder(
@@ -115,5 +128,6 @@ module.exports = {
   getOrderById,
   getOrders,
   payOfflineOrder,
+  updateOfflineOrder,
   updateOnlineStatus,
 };

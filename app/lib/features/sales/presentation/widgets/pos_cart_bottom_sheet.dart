@@ -67,6 +67,15 @@ class PosCartBottomSheet extends ConsumerWidget {
                             fontWeight: FontWeight.w500,
                           ),
                         ),
+                      if (cart.isEditingDraft)
+                        Text(
+                          'Đang sửa giỏ tạm ${cart.editingOrderCode}',
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: AppColors.info,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                     ],
                   ),
                 ),
@@ -348,10 +357,12 @@ class PosCartBottomSheet extends ConsumerWidget {
                                       }
                                     }
                                   },
-                            child: const Text(
-                              'Lưu giỏ tạm\n(Chờ duyệt)',
+                            child: Text(
+                              cart.isEditingDraft
+                                  ? 'Cập nhật giỏ tạm\n(Chờ duyệt)'
+                                  : 'Lưu giỏ tạm\n(Chờ duyệt)',
                               textAlign: TextAlign.center,
-                              style: TextStyle(fontWeight: FontWeight.bold),
+                              style: const TextStyle(fontWeight: FontWeight.bold),
                             ),
                           ),
                         ),

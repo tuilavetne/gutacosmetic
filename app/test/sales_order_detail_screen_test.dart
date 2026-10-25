@@ -3,7 +3,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:gutacosmetic/app/theme.dart';
 import 'package:gutacosmetic/core/widgets/app_messenger.dart';
 import 'package:gutacosmetic/features/sales/data/sales_repository.dart';
+import 'package:gutacosmetic/features/sales/presentation/controllers/pos_cart_controller.dart';
 import 'package:gutacosmetic/features/sales/presentation/sales_order_detail_screen.dart';
+import 'package:gutacosmetic/features/sales/presentation/sales_shell.dart';
+import 'package:gutacosmetic/features/session/session_controller.dart';
 import 'package:gutacosmetic/features/shared/models/models.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -24,6 +27,19 @@ class _FakeSalesRepository implements SalesRepository {
     cancelledOrderId = orderId;
     return order = order.copyWith(status: OrderStatus.cancelled);
   }
+
+  @override
+  Future<List<ProductInventory>> fetchProductsWithInventory({
+    String? search,
+    String? category,
+    String? skinType,
+    List<String>? productIds,
+  }) async => const [
+    ProductInventory(
+      product: Product(id: 'p1', sku: 'B5-01', name: 'Serum B5', price: 250000),
+      inventories: [StoreStock(store: Store(id: 's1'), availableStock: 9)],
+    ),
+  ];
 }
 
 Order _order(OrderStatus status) => Order(
@@ -109,5 +125,57 @@ void main() {
     expect(repo.cancelledOrderId, 'ord_1');
     // Đơn đã hủy: không còn thanh thao tác
     expect(find.text('Hủy đơn'), findsNothing);
+  });
+
+  testWidgets('Giỏ tạm: "Thêm / sửa sản phẩm" mở giỏ ở POS để chọn thêm', (
+    tester,
+  ) async {
+    final repo = _FakeSalesRepository(_order(OrderStatus.pendingApproval));
+    final container = ProviderContainer(
+      overrides: [
+        salesRepositoryProvider.overrideWithValue(repo),
+        activeStoreProvider.overrideWithValue(const Store(id: 's1')),
+        currentUserProvider.overrideWithValue(null),
+      ],
+    );
+    addTearDown(container.dispose);
+    container.read(salesTabProvider.notifier).show(SalesTab.orders);
+
+    // Mô phỏng luồng thật: danh sách đơn đẩy màn chi tiết lên.
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: MaterialApp(
+          scaffoldMessengerKey: rootScaffoldMessengerKey,
+          theme: buildAppTheme(),
+          home: Builder(
+            builder: (context) => Scaffold(
+              body: TextButton(
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) =>
+                        const SalesOrderDetailScreen(orderId: 'ord_1'),
+                  ),
+                ),
+                child: const Text('Mở đơn'),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('Mở đơn'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Thêm / sửa sản phẩm'));
+    await tester.pumpAndSettle();
+
+    final cart = container.read(posCartControllerProvider);
+    expect(cart.editingOrderId, 'ord_1');
+    expect(cart.items.single.quantity, 2);
+    expect(cart.items.single.availableStock, 9);
+    // Chuyển sang tab POS và đóng màn chi tiết
+    expect(container.read(salesTabProvider), SalesTab.pos);
+    expect(find.byType(SalesOrderDetailScreen), findsNothing);
   });
 }

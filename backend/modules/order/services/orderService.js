@@ -331,6 +331,31 @@ const createOnlineOrder = async (payload, customer) => {
   });
 };
 
+// Kho phải được giữ (reserveStock) trước khi gọi.
+const markSentToCashier = (order, salesUser) => {
+  order.inventoryReserved = true;
+  order.approvedBySalesId = salesUser._id;
+  appendStatus(
+    order,
+    ORDER_STATUSES.PENDING_PAYMENT,
+    salesUser._id,
+    "Sales approved order and sent it to Manager"
+  );
+};
+
+const assertEditableOfflineCart = (order) => {
+  if (
+    order.channel !== ORDER_CHANNELS.OFFLINE ||
+    order.status !== ORDER_STATUSES.PENDING_APPROVAL
+  ) {
+    throw new AppError(
+      "Only pending offline orders can be changed",
+      409,
+      "INVALID_ORDER_STATE"
+    );
+  }
+};
+
 // `submitToCashier: true` tạo đơn và gửi thu ngân (giữ kho) trong cùng một
 // transaction: thiếu hàng thì không tạo đơn nào, tránh để lại giỏ tạm mồ côi.
 const createOfflineOrder = async (payload, salesUser) => {
@@ -372,14 +397,46 @@ const createOfflineOrder = async (payload, salesUser) => {
     });
 
     if (submitToCashier) {
-      order.inventoryReserved = true;
-      order.approvedBySalesId = salesUser._id;
-      appendStatus(
-        order,
-        ORDER_STATUSES.PENDING_PAYMENT,
-        salesUser._id,
-        "Sales approved order and sent it to Manager"
-      );
+      markSentToCashier(order, salesUser);
+    }
+
+    await order.save({ session });
+    return order;
+  });
+};
+
+// Sales sửa giỏ tạm (thêm/bớt sản phẩm, đổi khách) khi đơn còn chờ duyệt.
+// Giá lấy lại theo giá hiện tại. `submitToCashier: true` thì lưu xong gửi thu
+// ngân luôn; thiếu hàng thì giỏ tạm giữ nguyên như trước khi sửa.
+const updateOfflineOrder = (orderId, payload, salesUser) => {
+  assertRole(salesUser, [USER_ROLES.SALES]);
+  const submitToCashier = payload.submitToCashier === true;
+
+  return runInTransaction(async (session) => {
+    const order = await findOrderOrThrow(orderId, session);
+    assertAssignedStore(salesUser, order.storeId);
+    assertEditableOfflineCart(order);
+
+    const items = await buildOrderItems(payload.items, session);
+
+    if (submitToCashier) {
+      await inventoryService.reserveStock(order.storeId, items, session);
+    } else {
+      await inventoryService.assertAvailableStock(order.storeId, items, session);
+    }
+
+    order.items = items;
+    order.customerId = payload.customerId || null;
+    order.customerName = payload.customerName ?? order.customerName;
+    order.customerPhone = payload.customerPhone ?? order.customerPhone;
+    order.statusHistory.push({
+      status: ORDER_STATUSES.PENDING_APPROVAL,
+      changedBy: salesUser._id,
+      note: "Sales updated the cart",
+    });
+
+    if (submitToCashier) {
+      markSentToCashier(order, salesUser);
     }
 
     await order.save({ session });
@@ -393,27 +450,10 @@ const approveOfflineOrder = (orderId, salesUser) => {
   return runInTransaction(async (session) => {
     const order = await findOrderOrThrow(orderId, session);
     assertAssignedStore(salesUser, order.storeId);
-
-    if (
-      order.channel !== ORDER_CHANNELS.OFFLINE ||
-      order.status !== ORDER_STATUSES.PENDING_APPROVAL
-    ) {
-      throw new AppError(
-        "Only pending offline orders can be approved",
-        409,
-        "INVALID_ORDER_STATE"
-      );
-    }
+    assertEditableOfflineCart(order);
 
     await inventoryService.reserveStock(order.storeId, order.items, session);
-    order.inventoryReserved = true;
-    order.approvedBySalesId = salesUser._id;
-    appendStatus(
-      order,
-      ORDER_STATUSES.PENDING_PAYMENT,
-      salesUser._id,
-      "Sales approved order and sent it to Manager"
-    );
+    markSentToCashier(order, salesUser);
     await order.save({ session });
     return order;
   });
@@ -789,5 +829,6 @@ module.exports = {
   getOrderForUser,
   getOrdersForUser,
   payOfflineOrder,
+  updateOfflineOrder,
   updateOnlineStatus,
 };
