@@ -12,6 +12,8 @@ import '../../../core/widgets/state_views.dart';
 import '../../customer/presentation/widgets/order_widgets.dart';
 import '../../shared/models/models.dart';
 import '../data/sales_repository.dart';
+import 'controllers/pos_cart_controller.dart';
+import 'sales_shell.dart';
 
 class SalesOrderDetailScreen extends ConsumerStatefulWidget {
   const SalesOrderDetailScreen({super.key, required this.orderId});
@@ -79,6 +81,42 @@ class _SalesOrderDetailScreenState
       if (mounted) {
         setState(() => _actionLoading = false);
         showAppSnackBar('Lỗi khi duyệt đơn: ${errorMessageOf(e)}', isError: true);
+      }
+    }
+  }
+
+  /// Mở lại giỏ tạm ở màn POS để thêm/bớt sản phẩm rồi lưu hoặc gửi thu ngân.
+  Future<void> _editCart() async {
+    if (_order == null || _actionLoading) return;
+    final cart = ref.read(posCartControllerProvider);
+    if (!cart.isEmpty && cart.editingOrderId != _order!.id) {
+      final ok = await showConfirmDialog(
+        context,
+        title: 'Thay giỏ đang chọn?',
+        message:
+            'Giỏ POS đang có ${cart.totalItems} món chưa lưu. Mở giỏ tạm '
+            '${_order!.orderCode} sẽ thay thế giỏ đó.',
+        confirmLabel: 'Mở giỏ tạm',
+      );
+      if (!ok || !mounted) return;
+    }
+
+    setState(() => _actionLoading = true);
+    try {
+      await ref.read(posCartControllerProvider.notifier).loadDraft(_order!);
+      ref.read(salesTabProvider.notifier).show(SalesTab.pos);
+      if (mounted) Navigator.of(context).pop();
+      showAppSnackBar(
+        'Đang sửa giỏ tạm ${_order!.orderCode}: chọn thêm sản phẩm rồi '
+        'mở giỏ để lưu hoặc gửi thu ngân.',
+      );
+    } catch (e) {
+      if (mounted) {
+        setState(() => _actionLoading = false);
+        showAppSnackBar(
+          'Không mở được giỏ tạm: ${errorMessageOf(e)}',
+          isError: true,
+        );
       }
     }
   }
@@ -565,14 +603,35 @@ class _SalesOrderDetailScreenState
   Widget? _buildActionBar(Order order) {
     final actions = switch (order.status) {
       OrderStatus.pendingApproval => [
-        _cancelButton('Hủy giỏ'),
-        const SizedBox(width: 12),
         Expanded(
-          child: AppButton(
-            label: 'Duyệt giỏ gửi sang thu ngân (Giữ kho)',
-            icon: Icons.check_circle_outline,
-            loading: _actionLoading,
-            onPressed: _approve,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  Expanded(child: _cancelButton('Hủy giỏ')),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: const Size(0, 48),
+                      ),
+                      icon: const Icon(Icons.add_shopping_cart, size: 18),
+                      label: const Text('Thêm / sửa sản phẩm'),
+                      onPressed: _actionLoading ? null : _editCart,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              AppButton(
+                label: 'Duyệt giỏ gửi sang thu ngân (Giữ kho)',
+                icon: Icons.check_circle_outline,
+                loading: _actionLoading,
+                onPressed: _approve,
+              ),
+            ],
           ),
         ),
       ],

@@ -25,6 +25,12 @@ router.post(
   orderController.createOfflineOrder
 );
 router.patch(
+  "/:orderId/items",
+  authorize(USER_ROLES.SALES),
+  requireAssignedStore,
+  orderController.updateOfflineOrder
+);
+router.patch(
   "/:orderId/approve",
   authorize(USER_ROLES.SALES),
   requireAssignedStore,
