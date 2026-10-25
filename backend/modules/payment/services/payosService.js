@@ -94,15 +94,13 @@ const assertCustomerCanPayOrder = (order, customer, options = {}) => {
     );
   }
 
-  if (
-    !options.allowExpired &&
-    (order.status === ORDER_STATUSES.CANCELLED ||
-      order.paymentStatus === PAYMENT_STATUSES.FAILED)
-  ) {
+  // QR hết hạn không còn hủy đơn: đơn chưa hủy thì khách tạo QR mới được, kể
+  // cả khi cửa hàng đã bắt đầu chuẩn bị hàng.
+  if (!options.allowCancelled && order.status === ORDER_STATUSES.CANCELLED) {
     throw new AppError(
-      "This payment QR has expired. Please create a new order.",
+      "This order has been cancelled",
       410,
-      "PAYMENT_QR_EXPIRED"
+      "ORDER_CANCELLED"
     );
   }
 
@@ -193,8 +191,6 @@ const getNextPaymentOrderCode = (order) =>
     : generatePaymentOrderCode();
 
 const createPayosPaymentLink = async (orderId, customer) => {
-  await orderService.expireUnpaidBankTransferOrders({ _id: orderId });
-
   const order = await Order.findById(orderId);
 
   if (!order) {
@@ -306,7 +302,7 @@ const completeOfflinePayosOrder = async (order, managerId = null) => {
   return order;
 };
 
-const createPosPayosPaymentLink = async (orderId, manager, options = {}) => {
+const createPosPayosPaymentLink = async (orderId, manager) => {
   const order = await Order.findById(orderId);
 
   if (!order) {
@@ -319,15 +315,8 @@ const createPosPayosPaymentLink = async (orderId, manager, options = {}) => {
     return buildPaymentResponse(order);
   }
 
-  const discountPercent = Math.max(
-    0,
-    Math.min(100, Number(options.discountPercent || 0))
-  );
-  const maxDiscountAmount = order.subtotal + order.shippingFee;
-  order.discountAmount = Math.min(
-    maxDiscountAmount,
-    Math.floor((maxDiscountAmount * discountPercent) / 100)
-  );
+  // Không có chiết khấu thủ công tại quầy: QR thu đúng tổng tiền đơn.
+  order.discountAmount = 0;
   order.pointsUsed = 0;
   const payableAmount = Math.max(
     0,
@@ -491,6 +480,73 @@ const cancelPaymentLinkForCancelledOrder = async (order) => {
   }
 };
 
+const UNPAID_PAYABLE_STATUSES = {
+  [ORDER_CHANNELS.OFFLINE]: [ORDER_STATUSES.PENDING_PAYMENT],
+  [ORDER_CHANNELS.ONLINE]: [
+    ORDER_STATUSES.PENDING,
+    ORDER_STATUSES.PREPARING,
+    ORDER_STATUSES.READY_FOR_PICKUP,
+  ],
+};
+
+// Trước khi thu tiền mặt/thẻ (tại quầy, hoặc khi giao/nhận đơn online chưa
+// chuyển khoản): hủy QR PayOS còn mở để khách không trả hai lần. Nếu PayOS báo
+// khách đã chuyển khoản thì ghi nhận và chặn thu thêm. PayOS lỗi/chưa cấu hình
+// thì không chặn việc thu tiền.
+const releasePaymentLinkBeforeCash = async (orderId, manager) => {
+  const order = await Order.findById(orderId).catch(() => null);
+
+  if (
+    !order ||
+    !UNPAID_PAYABLE_STATUSES[order.channel]?.includes(order.status) ||
+    !order.paymentOrderCode ||
+    order.paymentStatus === PAYMENT_STATUSES.PAID
+  ) {
+    return;
+  }
+
+  let payOS;
+
+  try {
+    ({ payOS } = createPayOSClient());
+  } catch (error) {
+    logPayos("skip release payment link", { error: error.message });
+    return;
+  }
+
+  try {
+    await payOS.paymentRequests.cancel(
+      order.paymentOrderCode,
+      "Khach tra tien mat tai cua hang"
+    );
+    return;
+  } catch (error) {
+    // Link đã hết hạn/đã hủy cũng báo lỗi — kiểm tra trạng thái thật bên dưới.
+    logPayos("cancel payment link before cash failed", {
+      orderId: String(order._id),
+      error: error.message,
+    });
+  }
+
+  let paymentLink;
+
+  try {
+    paymentLink = await payOS.paymentRequests.get(order.paymentOrderCode);
+  } catch (error) {
+    logPayos("payment link lookup before cash failed", { error: error.message });
+    return;
+  }
+
+  if (paymentLink.status === "PAID") {
+    await applyPaymentLinkStatus(order, paymentLink, manager._id);
+    throw new AppError(
+      "Customer already paid by PayOS bank transfer; do not collect cash",
+      409,
+      "ALREADY_PAID_BY_PAYOS"
+    );
+  }
+};
+
 const handlePayosWebhook = async (body) => {
   let data;
 
@@ -555,14 +611,8 @@ const applyPaymentLinkStatus = async (order, paymentLink, actorId = null) => {
     } else {
       await markOnlineOrderPaid(order);
     }
-  } else if (
-    (["CANCELLED", "EXPIRED", "FAILED"].includes(paymentLink.status) ||
-      (order.paymentExpiresAt && order.paymentExpiresAt <= new Date())) &&
-    order.paymentStatus !== PAYMENT_STATUSES.PAID
-  ) {
-    await orderService.expireUnpaidBankTransferOrders({ _id: order._id });
-    return Order.findById(order._id);
   }
+  // QR hết hạn/bị hủy: đơn giữ nguyên, khách tạo QR mới hoặc trả tiền mặt.
 
   await order.save();
 
@@ -576,7 +626,7 @@ const syncPayosPaymentStatus = async (orderId, customer) => {
     throw new AppError("Order was not found", 404, "ORDER_NOT_FOUND");
   }
 
-  assertCustomerCanPayOrder(order, customer, { allowExpired: true });
+  assertCustomerCanPayOrder(order, customer, { allowCancelled: true });
 
   if (!order.paymentOrderCode) {
     throw new AppError(
@@ -639,6 +689,7 @@ module.exports = {
   createPayosPaymentLink,
   createPosPayosPaymentLink,
   handlePayosWebhook,
+  releasePaymentLinkBeforeCash,
   syncPosPayosPaymentStatus,
   syncPayosPaymentStatus,
 };

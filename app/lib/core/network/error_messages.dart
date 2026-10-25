@@ -103,6 +103,9 @@ const _messages = <String, String>{
   'RECEIVED_QUANTITY_LIMIT_EXCEEDED': 'Mỗi lần nhập kho tối đa 1000 sản phẩm.',
   'INVALID_REQUEST_STATUS': 'Trạng thái yêu cầu không hợp lệ.',
   'REQUEST_CLOSED': 'Yêu cầu bổ sung này đã được xử lý.',
+  'MANAGER_NOTE_REQUIRED': 'Vui lòng ghi lý do hủy đề xuất để Sales biết.',
+  'EXPIRY_DATE_IN_PAST': 'Không nhập lô hàng đã hết hạn sử dụng.',
+  'INVALID_EXPIRY_DATE': 'Hạn sử dụng không hợp lệ.',
   'REQUEST_NOT_FOUND': 'Không tìm thấy yêu cầu bổ sung.',
   'INVALID_TRANSFER_SOURCE': 'Phiếu điều chuyển phải xuất từ kho tổng.',
   'INVALID_TRANSFER_DESTINATION': 'Phiếu điều chuyển chỉ chuyển đến chi nhánh.',
@@ -135,12 +138,15 @@ const _messages = <String, String>{
   'PAYMENT_REQUIRED':
       'Đơn chuyển khoản phải được thanh toán trước khi hoàn tất.',
   'ORDER_ALREADY_PAID': 'Đơn hàng đã được thanh toán.',
+  'ALREADY_PAID_BY_PAYOS':
+      'Khách đã chuyển khoản qua PayOS nên không thu thêm tiền. Tải lại đơn để xem trạng thái mới.',
   'TOO_MANY_UNPAID_BANK_TRANSFER_ORDERS':
       'Bạn có quá nhiều đơn chuyển khoản chưa thanh toán. '
-      'Vui lòng thanh toán hoặc chờ mã QR cũ hết hạn.',
+      'Vui lòng thanh toán các đơn đó trước.',
 
   // ---- Thanh toán PayOS ----
   'PAYMENT_QR_EXPIRED': 'Mã QR thanh toán đã hết hạn. Vui lòng đặt đơn mới.',
+  'ORDER_CANCELLED': 'Đơn hàng đã bị hủy.',
   'PAYOS_NOT_CONFIGURED': 'Máy chủ chưa cấu hình PayOS.',
   'PAYOS_CREATE_LINK_FAILED': 'Không tạo được mã QR PayOS. Vui lòng thử lại.',
   'PAYOS_PAYMENT_NOT_CREATED': 'Đơn hàng chưa có yêu cầu thanh toán PayOS.',

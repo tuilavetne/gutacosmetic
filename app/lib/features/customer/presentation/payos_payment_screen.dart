@@ -19,7 +19,7 @@ import '../data/order_repository.dart';
 import '../orders/order_display.dart';
 import 'widgets/order_widgets.dart';
 
-enum _PaymentView { awaiting, paid, expired, notBankTransfer }
+enum _PaymentView { awaiting, paid, qrExpired, cancelled, notBankTransfer }
 
 /// Quét mã VietQR PayOS cho đơn chuyển khoản. Tự hỏi PayOS mỗi
 /// [AppConstants.payosPollInterval] (không phụ thuộc webhook) và đếm ngược
@@ -61,12 +61,13 @@ class _PayosPaymentScreenState extends ConsumerState<PayosPaymentScreen> {
     final order = _order!;
     if (order.isPaid) return _PaymentView.paid;
     if (!order.isBankTransfer) return _PaymentView.notBankTransfer;
-    if (order.awaitsBankTransfer &&
-        _payment != null &&
-        _remaining > Duration.zero) {
-      return _PaymentView.awaiting;
+    // QR hết hạn không còn hủy đơn: khách tạo mã mới hoặc trả tiền mặt khi nhận.
+    if (order.awaitsBankTransfer) {
+      return _payment != null && _remaining > Duration.zero
+          ? _PaymentView.awaiting
+          : _PaymentView.qrExpired;
     }
-    return _PaymentView.expired;
+    return _PaymentView.cancelled;
   }
 
   Future<void> _load() async {
@@ -78,8 +79,10 @@ class _PayosPaymentScreenState extends ConsumerState<PayosPaymentScreen> {
         try {
           payment = await _repo.fetchPaymentLink(order.id);
         } on ApiException catch (e) {
-          // Hết hạn đúng lúc mở — tải lại để thấy đơn đã hủy.
-          if (e.code != 'PAYMENT_QR_EXPIRED') rethrow;
+          // Đơn vừa bị hủy đúng lúc mở — tải lại để thấy trạng thái mới.
+          if (e.code != 'ORDER_CANCELLED' && e.code != 'PAYMENT_QR_EXPIRED') {
+            rethrow;
+          }
           order = await _repo.fetchOrder(widget.orderId);
         }
       }
@@ -216,14 +219,25 @@ class _PayosPaymentScreenState extends ConsumerState<PayosPaymentScreen> {
                       secondaryLabel: 'Tiếp tục mua sắm',
                       onSecondary: () => context.go(AppRoutes.customerHome),
                     ),
-                    _PaymentView.expired => _ResultView(
+                    _PaymentView.qrExpired => _ResultView(
                       icon: Icons.timer_off_outlined,
-                      color: AppColors.accent,
+                      color: AppColors.warning,
                       title: 'Mã QR đã hết hạn',
                       message:
-                          'Đơn ${order.orderCode} đã tự động hủy vì chưa nhận '
-                          'được thanh toán trong 15 phút. Bạn có thể đặt lại '
-                          'các sản phẩm này.',
+                          'Đơn ${order.orderCode} vẫn được giữ. Tạo mã QR mới '
+                          'để chuyển khoản, hoặc trả tiền mặt khi nhận hàng.',
+                      primaryLabel: 'Tạo mã QR mới',
+                      onPrimary: _load,
+                      secondaryLabel: 'Xem đơn hàng',
+                      onSecondary: _close,
+                    ),
+                    _PaymentView.cancelled => _ResultView(
+                      icon: Icons.cancel_outlined,
+                      color: AppColors.accent,
+                      title: 'Đơn hàng đã hủy',
+                      message:
+                          'Đơn ${order.orderCode} đã bị hủy nên không thể '
+                          'thanh toán. Bạn có thể đặt lại các sản phẩm này.',
                       primaryLabel: 'Mua lại',
                       onPrimary: () => _reorder(order),
                       secondaryLabel: 'Xem đơn hàng',

@@ -18,6 +18,54 @@ const UNIVERSAL_SKIN_TYPE = "Da thường/Mọi loại da";
 
 const RETURN_REQUEST_TYPES = ["DAMAGED", "DEFECTIVE", "EXPIRED", "OTHER"];
 
+const startOfToday = () => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return today;
+};
+
+// HSD gửi lên dạng ngày (yyyy-mm-dd hoặc ISO). Trống -> null.
+// [allowPast] = false khi nhập lô mới: không nhận hàng đã hết hạn.
+const parseExpiryDate = (value, { allowPast = false } = {}) => {
+  if (value === undefined || value === null || value === "") {
+    return null;
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    throw new AppError("Expiry date is invalid", 400, "INVALID_EXPIRY_DATE");
+  }
+
+  if (!allowPast && date < startOfToday()) {
+    throw new AppError(
+      "Cannot receive stock that has already expired",
+      400,
+      "EXPIRY_DATE_IN_PAST"
+    );
+  }
+
+  return date;
+};
+
+// Kho chưa quản lý theo lô: giữ HSD gần nhất (lô hết hạn sớm nhất) để cảnh
+// báo. Lô cũ bán hết thì Manager sửa HSD bằng tay (updateInventoryExpiry).
+const applyReceivedExpiry = async (storeId, productId, expiryDate, session) => {
+  if (!expiryDate) {
+    return;
+  }
+
+  await StoreInventory.updateOne(
+    {
+      storeId,
+      productId,
+      $or: [{ expiryDate: null }, { expiryDate: { $gt: expiryDate } }],
+    },
+    { $set: { expiryDate } },
+    { session }
+  );
+};
+
 const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 const buildProductQuery = ({ brand, category, productIds, search, skinType } = {}) => {
@@ -347,6 +395,21 @@ const updateRestockRequestStatus = async ({
     throw new AppError("You cannot update another store request", 403, "FORBIDDEN");
   }
 
+  // Đề xuất đã nhận hàng/đã hủy thì không đổi được nữa (tránh "hủy" một đề
+  // xuất đã nhập kho).
+  if (request.status !== "OPEN") {
+    throw new AppError("This restock request is already closed", 409, "REQUEST_CLOSED");
+  }
+
+  // Hủy đề xuất phải ghi lý do để Sales biết vì sao không nhập hàng.
+  if (status === "CANCELLED" && !String(managerNote || "").trim()) {
+    throw new AppError(
+      "A note is required when cancelling a restock request",
+      400,
+      "MANAGER_NOTE_REQUIRED"
+    );
+  }
+
   request.status = status;
   request.managerNote = managerNote || "";
   request.handledBy = user._id;
@@ -383,12 +446,14 @@ const acknowledgeRestockRequest = async ({ requestId, user }) => {
 };
 
 const receiveRestockRequest = async ({
+  expiryDate: rawExpiryDate,
   managerNote,
   receivedQuantity,
   requestId,
   user,
 }) => {
   const quantity = Number.parseInt(receivedQuantity, 10);
+  const expiryDate = parseExpiryDate(rawExpiryDate);
 
   if (!Number.isInteger(quantity) || quantity < 1) {
     throw new AppError("Received quantity is invalid", 400, "INVALID_RECEIVED_QUANTITY");
@@ -449,6 +514,12 @@ const receiveRestockRequest = async ({
       [{ productId: request.productId, quantity }],
       session
     );
+    await applyReceivedExpiry(
+      request.storeId,
+      request.productId,
+      expiryDate,
+      session
+    );
 
     await InventoryReceipt.create(
       [
@@ -456,6 +527,7 @@ const receiveRestockRequest = async ({
           storeId: request.storeId,
           productId: request.productId,
           quantity,
+          expiryDate,
           source: "SALES_REQUEST",
           note:
             managerNote || `Manager received ${quantity} item(s) from Sales request`,
@@ -478,6 +550,7 @@ const receiveRestockRequest = async ({
 };
 
 const receiveDirectStock = async ({
+  expiryDate: rawExpiryDate,
   note,
   productId,
   quantity,
@@ -486,6 +559,7 @@ const receiveDirectStock = async ({
 }) => {
   const scopedStoreId = getScopedStoreId(user, storeId);
   const receivedQuantity = Number.parseInt(quantity, 10);
+  const expiryDate = parseExpiryDate(rawExpiryDate);
 
   if (!scopedStoreId) {
     throw new AppError("Store ID is required", 400, "STORE_ID_REQUIRED");
@@ -522,6 +596,7 @@ const receiveDirectStock = async ({
       [{ productId, quantity: receivedQuantity }],
       session
     );
+    await applyReceivedExpiry(scopedStoreId, productId, expiryDate, session);
 
     await InventoryReceipt.create(
       [
@@ -529,6 +604,7 @@ const receiveDirectStock = async ({
           storeId: scopedStoreId,
           productId,
           quantity: receivedQuantity,
+          expiryDate,
           source: "DIRECT",
           note: note || "",
           receivedBy: user._id,
@@ -551,6 +627,42 @@ const receiveDirectStock = async ({
       receivedQuantity,
     };
   });
+};
+
+// Manager sửa HSD đang theo dõi của một sản phẩm tại chi nhánh (ví dụ lô cũ đã
+// bán hết nên HSD gần nhất đổi). `expiryDate` trống -> bỏ theo dõi HSD.
+const updateInventoryExpiry = async ({
+  expiryDate: rawExpiryDate,
+  productId,
+  storeId,
+  user,
+}) => {
+  const scopedStoreId = getScopedStoreId(user, storeId);
+
+  if (!scopedStoreId || !productId) {
+    throw new AppError(
+      "Store ID and product ID are required",
+      400,
+      "INVALID_EXPIRY_UPDATE"
+    );
+  }
+
+  await ensureStoreCanProcessInventoryMutation({ storeId: scopedStoreId, user });
+  const expiryDate = parseExpiryDate(rawExpiryDate, { allowPast: true });
+
+  const inventory = await StoreInventory.findOneAndUpdate(
+    { storeId: scopedStoreId, productId },
+    { $set: { expiryDate } },
+    { new: true }
+  )
+    .populate("storeId", "name address phone type")
+    .populate("productId", "name sku brand category image price");
+
+  if (!inventory) {
+    throw new AppError("Inventory item was not found", 404, "INVENTORY_NOT_FOUND");
+  }
+
+  return inventory;
 };
 
 const createInventoryAdjustment = async ({
@@ -713,6 +825,13 @@ const createInventoryReturnRequest = async ({
       );
     }
 
+    // Khóa ngay số hàng trả (không bán được nữa) trong lúc chờ Owner duyệt.
+    await inventoryMutationService.reserveStock(
+      scopedStoreId,
+      [{ productId, quantity: requestedQuantity }],
+      session
+    );
+
     const [request] = await InventoryReturnRequest.create(
       [
         {
@@ -723,6 +842,7 @@ const createInventoryReturnRequest = async ({
           reasonType: normalizedType,
           managerNote: managerNote || "",
           requestedBy: user._id,
+          inventoryLocked: true,
         },
       ],
       { session }
@@ -775,10 +895,29 @@ const reviewInventoryReturnRequest = async ({
       );
     }
 
-    if (normalizedStatus === "APPROVED") {
+    const items = [{ productId: request.productId, quantity: request.quantity }];
+
+    if (request.inventoryLocked) {
+      // Duyệt: trừ hẳn hàng đã khóa (reserved, total). Từ chối: trả lại vào
+      // hàng bán được.
+      if (normalizedStatus === "APPROVED") {
+        await inventoryMutationService.completeReservedSale(
+          request.storeId,
+          items,
+          session
+        );
+      } else {
+        await inventoryMutationService.releaseReservedStock(
+          request.storeId,
+          items,
+          session
+        );
+      }
+    } else if (normalizedStatus === "APPROVED") {
+      // Yêu cầu cũ chưa khóa hàng: trừ từ hàng khả dụng như trước.
       await inventoryMutationService.writeOffStock(
         request.storeId,
-        [{ productId: request.productId, quantity: request.quantity }],
+        items,
         session
       );
     }
@@ -808,6 +947,149 @@ const getInventoryAdjustments = async ({ storeId, user }) => {
     .sort({ createdAt: -1 })
     .limit(100)
     .lean();
+};
+
+const HISTORY_TYPES = ["RECEIPT", "ADJUSTMENT", "RETURN"];
+const MAX_HISTORY_LIMIT = 300;
+
+const productSummary = (product) =>
+  product && typeof product === "object"
+    ? { _id: product._id, name: product.name, sku: product.sku }
+    : { _id: product };
+
+const actorSummary = (actor) =>
+  actor && typeof actor === "object"
+    ? { _id: actor._id, fullName: actor.fullName, role: actor.role }
+    : null;
+
+// Lịch sử kho của chi nhánh: phiếu nhập (gồm hàng chuyển đến), ghi giảm và
+// trả hàng lỗi gộp thành một dòng thời gian, mới nhất trước. Hàng bán ra
+// (theo đơn) không nằm ở đây. `totalChange` là thay đổi của totalStock;
+// `lockedChange` là thay đổi của số hàng bị khóa (đang giữ) do trả hàng.
+const getInventoryHistory = async ({ limit, productId, storeId, type, user }) => {
+  const scopedStoreId = getScopedStoreId(user, storeId);
+
+  if (!scopedStoreId) {
+    throw new AppError("Store ID is required", 400, "STORE_ID_REQUIRED");
+  }
+
+  const normalizedType = type ? String(type).toUpperCase() : null;
+
+  if (normalizedType && !HISTORY_TYPES.includes(normalizedType)) {
+    throw new AppError("History type is invalid", 400, "INVALID_HISTORY_TYPE");
+  }
+
+  const parsedLimit = Number.parseInt(limit, 10);
+  const max =
+    Number.isInteger(parsedLimit) && parsedLimit > 0
+      ? Math.min(parsedLimit, MAX_HISTORY_LIMIT)
+      : 100;
+  const query = { storeId: scopedStoreId, ...(productId ? { productId } : {}) };
+  const wants = (t) => !normalizedType || normalizedType === t;
+  const productFields = "name sku";
+  const actorFields = "fullName role";
+
+  const [receipts, adjustments, returns] = await Promise.all([
+    wants("RECEIPT")
+      ? InventoryReceipt.find(query)
+          .populate("productId", productFields)
+          .populate("receivedBy", actorFields)
+          .sort({ createdAt: -1 })
+          .limit(max)
+          .lean()
+      : [],
+    wants("ADJUSTMENT")
+      ? InventoryAdjustment.find(query)
+          .populate("productId", productFields)
+          .populate("createdBy", actorFields)
+          .sort({ createdAt: -1 })
+          .limit(max)
+          .lean()
+      : [],
+    wants("RETURN")
+      ? InventoryReturnRequest.find(query)
+          .populate("productId", productFields)
+          .populate("requestedBy", actorFields)
+          .populate("reviewedBy", actorFields)
+          .sort({ updatedAt: -1 })
+          .limit(max)
+          .lean()
+      : [],
+  ]);
+
+  const entries = [
+    ...receipts.map((r) => ({
+      id: `receipt:${r._id}`,
+      type: "RECEIPT",
+      event: r.source,
+      at: r.createdAt,
+      product: productSummary(r.productId),
+      quantity: r.quantity,
+      totalChange: r.quantity,
+      lockedChange: 0,
+      expiryDate: r.expiryDate || null,
+      note: r.note || "",
+      actor: actorSummary(r.receivedBy),
+      referenceId: r.referenceId || null,
+    })),
+    ...adjustments.map((a) => ({
+      id: `adjustment:${a._id}`,
+      type: "ADJUSTMENT",
+      event: a.type,
+      at: a.createdAt,
+      product: productSummary(a.productId),
+      quantity: a.quantity,
+      totalChange: -a.quantity,
+      lockedChange: 0,
+      expiryDate: null,
+      note: a.note || "",
+      actor: actorSummary(a.createdBy),
+      referenceId: null,
+    })),
+    ...returns.flatMap((r) => {
+      const base = {
+        type: "RETURN",
+        product: productSummary(r.productId),
+        quantity: r.quantity,
+        expiryDate: null,
+        referenceId: r._id,
+      };
+      const created = {
+        ...base,
+        id: `return:${r._id}:created`,
+        event: "RETURN_REQUESTED",
+        at: r.createdAt,
+        totalChange: 0,
+        lockedChange: r.inventoryLocked ? r.quantity : 0,
+        note: r.managerNote || "",
+        actor: actorSummary(r.requestedBy),
+      };
+
+      if (r.status === "PENDING") {
+        return [created];
+      }
+
+      // Yêu cầu tạo trước khi có cơ chế khóa: duyệt thì trừ từ hàng khả dụng.
+      const wasLocked = Boolean(r.inventoryLocked);
+      return [
+        created,
+        {
+          ...base,
+          id: `return:${r._id}:reviewed`,
+          event: r.status === "APPROVED" ? "RETURN_APPROVED" : "RETURN_REJECTED",
+          at: r.reviewedAt || r.updatedAt,
+          totalChange: r.status === "APPROVED" ? -r.quantity : 0,
+          lockedChange: wasLocked ? -r.quantity : 0,
+          note: r.reviewNote || "",
+          actor: actorSummary(r.reviewedBy),
+        },
+      ];
+    }),
+  ];
+
+  return entries
+    .sort((a, b) => new Date(b.at) - new Date(a.at))
+    .slice(0, max);
 };
 
 const getInventoryReceipts = async ({ storeId, user }) => {
@@ -932,10 +1214,12 @@ module.exports = {
   getInventoryReceipts,
   getInventoryReturnRequests,
   getInventoryAlerts,
+  getInventoryHistory,
   getProductInventory,
   getRestockRequests,
   receiveDirectStock,
   receiveRestockRequest,
   reviewInventoryReturnRequest,
+  updateInventoryExpiry,
   updateRestockRequestStatus,
 };
