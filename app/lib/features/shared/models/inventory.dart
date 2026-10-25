@@ -174,6 +174,34 @@ abstract class InventoryAdjustment with _$InventoryAdjustment {
       _$InventoryAdjustmentFromJson(json);
 }
 
+/// Yêu cầu trả hàng lỗi của Manager (`GET /inventory/return-requests`). Số
+/// hàng bị khóa (đang giữ) tới khi Owner duyệt hoặc từ chối.
+@freezed
+abstract class InventoryReturnRequest with _$InventoryReturnRequest {
+  const factory InventoryReturnRequest({
+    @JsonKey(name: '_id') required String id,
+    @JsonKey(readValue: _readStore)
+    @StoreRefConverter()
+    EntityRef<Store>? storeId,
+    @JsonKey(readValue: _readProduct)
+    @ProductRefConverter()
+    EntityRef<Product>? productId,
+    @Default(0) int quantity,
+    @Default(0) int currentAvailableStock,
+    @Default(ReturnReasonType.other) ReturnReasonType reasonType,
+    String? managerNote,
+    String? reviewNote,
+    @Default(ReturnRequestStatus.pending) ReturnRequestStatus status,
+    @UserRefConverter() EntityRef<AppUser>? requestedBy,
+    @UserRefConverter() EntityRef<AppUser>? reviewedBy,
+    DateTime? reviewedAt,
+    DateTime? createdAt,
+  }) = _InventoryReturnRequest;
+
+  factory InventoryReturnRequest.fromJson(Map<String, dynamic> json) =>
+      _$InventoryReturnRequestFromJson(json);
+}
+
 @freezed
 abstract class TransferItem with _$TransferItem {
   const factory TransferItem({

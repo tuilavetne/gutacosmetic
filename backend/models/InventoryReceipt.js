@@ -18,6 +18,11 @@ const inventoryReceiptSchema = new mongoose.Schema(
       required: true,
       min: 1,
     },
+    // Hạn sử dụng của lô vừa nhập (nếu có).
+    expiryDate: {
+      type: Date,
+      default: null,
+    },
     source: {
       type: String,
       enum: ["DIRECT", "SALES_REQUEST", "TRANSFER", "RETURN_REJECTED"],

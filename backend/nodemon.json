@@ -6,6 +6,7 @@
     "controllers",
     "middlewares",
     "models",
+    "modules",
     "routes",
     "services",
     "utils"

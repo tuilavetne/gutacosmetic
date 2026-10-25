@@ -46,6 +46,13 @@ const inventoryReturnRequestSchema = new mongoose.Schema(
       default: "PENDING",
       index: true,
     },
+    // true: số hàng trả bị khóa (chuyển sang reservedStock) ngay khi tạo yêu
+    // cầu — giữ nguyên sau khi duyệt để biết cách xử lý/ghi lịch sử. Yêu cầu
+    // tạo trước khi có cơ chế khóa là false.
+    inventoryLocked: {
+      type: Boolean,
+      default: false,
+    },
     requestedBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",

@@ -14,6 +14,11 @@ router.get(
   authorize(USER_ROLES.SALES, USER_ROLES.MANAGER),
   userController.searchCustomers
 );
+router.get(
+  "/redemptions",
+  authorize(USER_ROLES.MANAGER),
+  userController.getRedemptions
+);
 router.post(
   "/:customerId/redeem-points",
   authorize(USER_ROLES.MANAGER),

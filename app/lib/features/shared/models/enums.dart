@@ -154,12 +154,14 @@ enum AdjustmentType {
 enum ReceiptSource {
   direct,
   salesRequest,
-  transfer;
+  transfer,
+  returnRejected;
 
   String get label => switch (this) {
     direct => 'Nhập trực tiếp',
-    salesRequest => 'Theo yêu cầu Sales',
-    transfer => 'Điều chuyển',
+    salesRequest => 'Theo đề xuất Sales',
+    transfer => 'Hàng chuyển đến',
+    returnRejected => 'Trả hàng bị từ chối',
   };
 }
 
@@ -173,6 +175,34 @@ enum RestockStatus {
     open => 'Đang mở',
     resolved => 'Đã nhận hàng',
     cancelled => 'Đã hủy',
+  };
+}
+
+@JsonEnum(fieldRename: FieldRename.screamingSnake)
+enum ReturnRequestStatus {
+  pending,
+  approved,
+  rejected;
+
+  String get label => switch (this) {
+    pending => 'Chờ Owner duyệt',
+    approved => 'Đã duyệt trả',
+    rejected => 'Bị từ chối',
+  };
+}
+
+@JsonEnum(fieldRename: FieldRename.screamingSnake)
+enum ReturnReasonType {
+  damaged,
+  defective,
+  expired,
+  other;
+
+  String get label => switch (this) {
+    damaged => 'Hàng hỏng',
+    defective => 'Hàng lỗi',
+    expired => 'Hết hạn',
+    other => 'Khác',
   };
 }
 

@@ -60,6 +60,18 @@ router
     inventoryController.receiveDirectStock
   );
 
+router.get(
+  "/history",
+  authorize(USER_ROLES.OWNER, USER_ROLES.MANAGER),
+  inventoryController.getInventoryHistory
+);
+
+router.patch(
+  "/expiry",
+  authorize(USER_ROLES.OWNER, USER_ROLES.MANAGER),
+  inventoryController.updateInventoryExpiry
+);
+
 router
   .route("/adjustments")
   .get(

@@ -1828,6 +1828,312 @@ as DateTime?,
 
 
 /// @nodoc
+mixin _$InventoryReturnRequest {
+
+@JsonKey(name: '_id') String get id;@JsonKey(readValue: _readStore)@StoreRefConverter() EntityRef<Store>? get storeId;@JsonKey(readValue: _readProduct)@ProductRefConverter() EntityRef<Product>? get productId; int get quantity; int get currentAvailableStock; ReturnReasonType get reasonType; String? get managerNote; String? get reviewNote; ReturnRequestStatus get status;@UserRefConverter() EntityRef<AppUser>? get requestedBy;@UserRefConverter() EntityRef<AppUser>? get reviewedBy; DateTime? get reviewedAt; DateTime? get createdAt;
+/// Create a copy of InventoryReturnRequest
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$InventoryReturnRequestCopyWith<InventoryReturnRequest> get copyWith => _$InventoryReturnRequestCopyWithImpl<InventoryReturnRequest>(this as InventoryReturnRequest, _$identity);
+
+  /// Serializes this InventoryReturnRequest to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  final _this = this as InventoryReturnRequest;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is InventoryReturnRequest&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.storeId, _this.storeId) || other.storeId == _this.storeId)&&(identical(other.productId, _this.productId) || other.productId == _this.productId)&&(identical(other.quantity, _this.quantity) || other.quantity == _this.quantity)&&(identical(other.currentAvailableStock, _this.currentAvailableStock) || other.currentAvailableStock == _this.currentAvailableStock)&&(identical(other.reasonType, _this.reasonType) || other.reasonType == _this.reasonType)&&(identical(other.managerNote, _this.managerNote) || other.managerNote == _this.managerNote)&&(identical(other.reviewNote, _this.reviewNote) || other.reviewNote == _this.reviewNote)&&(identical(other.status, _this.status) || other.status == _this.status)&&(identical(other.requestedBy, _this.requestedBy) || other.requestedBy == _this.requestedBy)&&(identical(other.reviewedBy, _this.reviewedBy) || other.reviewedBy == _this.reviewedBy)&&(identical(other.reviewedAt, _this.reviewedAt) || other.reviewedAt == _this.reviewedAt)&&(identical(other.createdAt, _this.createdAt) || other.createdAt == _this.createdAt));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode {
+  final _this = this as InventoryReturnRequest;
+  return Object.hash(runtimeType,_this.id,_this.storeId,_this.productId,_this.quantity,_this.currentAvailableStock,_this.reasonType,_this.managerNote,_this.reviewNote,_this.status,_this.requestedBy,_this.reviewedBy,_this.reviewedAt,_this.createdAt);
+}
+
+@override
+String toString() {
+  final _this = this as InventoryReturnRequest;
+  return 'InventoryReturnRequest(id: ${_this.id}, storeId: ${_this.storeId}, productId: ${_this.productId}, quantity: ${_this.quantity}, currentAvailableStock: ${_this.currentAvailableStock}, reasonType: ${_this.reasonType}, managerNote: ${_this.managerNote}, reviewNote: ${_this.reviewNote}, status: ${_this.status}, requestedBy: ${_this.requestedBy}, reviewedBy: ${_this.reviewedBy}, reviewedAt: ${_this.reviewedAt}, createdAt: ${_this.createdAt})';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $InventoryReturnRequestCopyWith<$Res>  {
+  factory $InventoryReturnRequestCopyWith(InventoryReturnRequest value, $Res Function(InventoryReturnRequest) _then) = _$InventoryReturnRequestCopyWithImpl;
+@useResult
+$Res call({
+@JsonKey(name: '_id') String id,@JsonKey(readValue: _readStore)@StoreRefConverter() EntityRef<Store>? storeId,@JsonKey(readValue: _readProduct)@ProductRefConverter() EntityRef<Product>? productId, int quantity, int currentAvailableStock, ReturnReasonType reasonType, String? managerNote, String? reviewNote, ReturnRequestStatus status,@UserRefConverter() EntityRef<AppUser>? requestedBy,@UserRefConverter() EntityRef<AppUser>? reviewedBy, DateTime? reviewedAt, DateTime? createdAt
+});
+
+
+
+
+}
+/// @nodoc
+class _$InventoryReturnRequestCopyWithImpl<$Res>
+    implements $InventoryReturnRequestCopyWith<$Res> {
+  _$InventoryReturnRequestCopyWithImpl(this._self, this._then);
+
+  final InventoryReturnRequest _self;
+  final $Res Function(InventoryReturnRequest) _then;
+
+/// Create a copy of InventoryReturnRequest
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? storeId = freezed,Object? productId = freezed,Object? quantity = null,Object? currentAvailableStock = null,Object? reasonType = null,Object? managerNote = freezed,Object? reviewNote = freezed,Object? status = null,Object? requestedBy = freezed,Object? reviewedBy = freezed,Object? reviewedAt = freezed,Object? createdAt = freezed,}) {
+  return _then(InventoryReturnRequest(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,storeId: freezed == storeId ? _self.storeId : storeId // ignore: cast_nullable_to_non_nullable
+as EntityRef<Store>?,productId: freezed == productId ? _self.productId : productId // ignore: cast_nullable_to_non_nullable
+as EntityRef<Product>?,quantity: null == quantity ? _self.quantity : quantity // ignore: cast_nullable_to_non_nullable
+as int,currentAvailableStock: null == currentAvailableStock ? _self.currentAvailableStock : currentAvailableStock // ignore: cast_nullable_to_non_nullable
+as int,reasonType: null == reasonType ? _self.reasonType : reasonType // ignore: cast_nullable_to_non_nullable
+as ReturnReasonType,managerNote: freezed == managerNote ? _self.managerNote : managerNote // ignore: cast_nullable_to_non_nullable
+as String?,reviewNote: freezed == reviewNote ? _self.reviewNote : reviewNote // ignore: cast_nullable_to_non_nullable
+as String?,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
+as ReturnRequestStatus,requestedBy: freezed == requestedBy ? _self.requestedBy : requestedBy // ignore: cast_nullable_to_non_nullable
+as EntityRef<AppUser>?,reviewedBy: freezed == reviewedBy ? _self.reviewedBy : reviewedBy // ignore: cast_nullable_to_non_nullable
+as EntityRef<AppUser>?,reviewedAt: freezed == reviewedAt ? _self.reviewedAt : reviewedAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,createdAt: freezed == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [InventoryReturnRequest].
+extension InventoryReturnRequestPatterns on InventoryReturnRequest {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _InventoryReturnRequest value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _InventoryReturnRequest() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _InventoryReturnRequest value)  $default,){
+final _that = this;
+switch (_that) {
+case _InventoryReturnRequest():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _InventoryReturnRequest value)?  $default,){
+final _that = this;
+switch (_that) {
+case _InventoryReturnRequest() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(name: '_id')  String id, @JsonKey(readValue: _readStore)@StoreRefConverter()  EntityRef<Store>? storeId, @JsonKey(readValue: _readProduct)@ProductRefConverter()  EntityRef<Product>? productId,  int quantity,  int currentAvailableStock,  ReturnReasonType reasonType,  String? managerNote,  String? reviewNote,  ReturnRequestStatus status, @UserRefConverter()  EntityRef<AppUser>? requestedBy, @UserRefConverter()  EntityRef<AppUser>? reviewedBy,  DateTime? reviewedAt,  DateTime? createdAt)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _InventoryReturnRequest() when $default != null:
+return $default(_that.id,_that.storeId,_that.productId,_that.quantity,_that.currentAvailableStock,_that.reasonType,_that.managerNote,_that.reviewNote,_that.status,_that.requestedBy,_that.reviewedBy,_that.reviewedAt,_that.createdAt);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(name: '_id')  String id, @JsonKey(readValue: _readStore)@StoreRefConverter()  EntityRef<Store>? storeId, @JsonKey(readValue: _readProduct)@ProductRefConverter()  EntityRef<Product>? productId,  int quantity,  int currentAvailableStock,  ReturnReasonType reasonType,  String? managerNote,  String? reviewNote,  ReturnRequestStatus status, @UserRefConverter()  EntityRef<AppUser>? requestedBy, @UserRefConverter()  EntityRef<AppUser>? reviewedBy,  DateTime? reviewedAt,  DateTime? createdAt)  $default,) {final _that = this;
+switch (_that) {
+case _InventoryReturnRequest():
+return $default(_that.id,_that.storeId,_that.productId,_that.quantity,_that.currentAvailableStock,_that.reasonType,_that.managerNote,_that.reviewNote,_that.status,_that.requestedBy,_that.reviewedBy,_that.reviewedAt,_that.createdAt);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(name: '_id')  String id, @JsonKey(readValue: _readStore)@StoreRefConverter()  EntityRef<Store>? storeId, @JsonKey(readValue: _readProduct)@ProductRefConverter()  EntityRef<Product>? productId,  int quantity,  int currentAvailableStock,  ReturnReasonType reasonType,  String? managerNote,  String? reviewNote,  ReturnRequestStatus status, @UserRefConverter()  EntityRef<AppUser>? requestedBy, @UserRefConverter()  EntityRef<AppUser>? reviewedBy,  DateTime? reviewedAt,  DateTime? createdAt)?  $default,) {final _that = this;
+switch (_that) {
+case _InventoryReturnRequest() when $default != null:
+return $default(_that.id,_that.storeId,_that.productId,_that.quantity,_that.currentAvailableStock,_that.reasonType,_that.managerNote,_that.reviewNote,_that.status,_that.requestedBy,_that.reviewedBy,_that.reviewedAt,_that.createdAt);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _InventoryReturnRequest implements InventoryReturnRequest {
+  const _InventoryReturnRequest({@JsonKey(name: '_id') required this.id, @JsonKey(readValue: _readStore)@StoreRefConverter() this.storeId, @JsonKey(readValue: _readProduct)@ProductRefConverter() this.productId, this.quantity = 0, this.currentAvailableStock = 0, this.reasonType = ReturnReasonType.other, this.managerNote, this.reviewNote, this.status = ReturnRequestStatus.pending, @UserRefConverter() this.requestedBy, @UserRefConverter() this.reviewedBy, this.reviewedAt, this.createdAt});
+  factory _InventoryReturnRequest.fromJson(Map<String, dynamic> json) => _$InventoryReturnRequestFromJson(json);
+
+@override@JsonKey(name: '_id') final  String id;
+@override@JsonKey(readValue: _readStore)@StoreRefConverter() final  EntityRef<Store>? storeId;
+@override@JsonKey(readValue: _readProduct)@ProductRefConverter() final  EntityRef<Product>? productId;
+@override@JsonKey() final  int quantity;
+@override@JsonKey() final  int currentAvailableStock;
+@override@JsonKey() final  ReturnReasonType reasonType;
+@override final  String? managerNote;
+@override final  String? reviewNote;
+@override@JsonKey() final  ReturnRequestStatus status;
+@override@UserRefConverter() final  EntityRef<AppUser>? requestedBy;
+@override@UserRefConverter() final  EntityRef<AppUser>? reviewedBy;
+@override final  DateTime? reviewedAt;
+@override final  DateTime? createdAt;
+
+/// Create a copy of InventoryReturnRequest
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$InventoryReturnRequestCopyWith<_InventoryReturnRequest> get copyWith => __$InventoryReturnRequestCopyWithImpl<_InventoryReturnRequest>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$InventoryReturnRequestToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _InventoryReturnRequest&&(identical(other.id, id) || other.id == id)&&(identical(other.storeId, storeId) || other.storeId == storeId)&&(identical(other.productId, productId) || other.productId == productId)&&(identical(other.quantity, quantity) || other.quantity == quantity)&&(identical(other.currentAvailableStock, currentAvailableStock) || other.currentAvailableStock == currentAvailableStock)&&(identical(other.reasonType, reasonType) || other.reasonType == reasonType)&&(identical(other.managerNote, managerNote) || other.managerNote == managerNote)&&(identical(other.reviewNote, reviewNote) || other.reviewNote == reviewNote)&&(identical(other.status, status) || other.status == status)&&(identical(other.requestedBy, requestedBy) || other.requestedBy == requestedBy)&&(identical(other.reviewedBy, reviewedBy) || other.reviewedBy == reviewedBy)&&(identical(other.reviewedAt, reviewedAt) || other.reviewedAt == reviewedAt)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode {
+    return Object.hash(runtimeType,id,storeId,productId,quantity,currentAvailableStock,reasonType,managerNote,reviewNote,status,requestedBy,reviewedBy,reviewedAt,createdAt);
+}
+
+@override
+String toString() {
+    return 'InventoryReturnRequest(id: $id, storeId: $storeId, productId: $productId, quantity: $quantity, currentAvailableStock: $currentAvailableStock, reasonType: $reasonType, managerNote: $managerNote, reviewNote: $reviewNote, status: $status, requestedBy: $requestedBy, reviewedBy: $reviewedBy, reviewedAt: $reviewedAt, createdAt: $createdAt)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$InventoryReturnRequestCopyWith<$Res> implements $InventoryReturnRequestCopyWith<$Res> {
+  factory _$InventoryReturnRequestCopyWith(_InventoryReturnRequest value, $Res Function(_InventoryReturnRequest) _then) = __$InventoryReturnRequestCopyWithImpl;
+@override @useResult
+$Res call({
+@JsonKey(name: '_id') String id,@JsonKey(readValue: _readStore)@StoreRefConverter() EntityRef<Store>? storeId,@JsonKey(readValue: _readProduct)@ProductRefConverter() EntityRef<Product>? productId, int quantity, int currentAvailableStock, ReturnReasonType reasonType, String? managerNote, String? reviewNote, ReturnRequestStatus status,@UserRefConverter() EntityRef<AppUser>? requestedBy,@UserRefConverter() EntityRef<AppUser>? reviewedBy, DateTime? reviewedAt, DateTime? createdAt
+});
+
+
+
+
+}
+/// @nodoc
+class __$InventoryReturnRequestCopyWithImpl<$Res>
+    implements _$InventoryReturnRequestCopyWith<$Res> {
+  __$InventoryReturnRequestCopyWithImpl(this._self, this._then);
+
+  final _InventoryReturnRequest _self;
+  final $Res Function(_InventoryReturnRequest) _then;
+
+/// Create a copy of InventoryReturnRequest
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? storeId = freezed,Object? productId = freezed,Object? quantity = null,Object? currentAvailableStock = null,Object? reasonType = null,Object? managerNote = freezed,Object? reviewNote = freezed,Object? status = null,Object? requestedBy = freezed,Object? reviewedBy = freezed,Object? reviewedAt = freezed,Object? createdAt = freezed,}) {
+  return _then(_InventoryReturnRequest(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,storeId: freezed == storeId ? _self.storeId : storeId // ignore: cast_nullable_to_non_nullable
+as EntityRef<Store>?,productId: freezed == productId ? _self.productId : productId // ignore: cast_nullable_to_non_nullable
+as EntityRef<Product>?,quantity: null == quantity ? _self.quantity : quantity // ignore: cast_nullable_to_non_nullable
+as int,currentAvailableStock: null == currentAvailableStock ? _self.currentAvailableStock : currentAvailableStock // ignore: cast_nullable_to_non_nullable
+as int,reasonType: null == reasonType ? _self.reasonType : reasonType // ignore: cast_nullable_to_non_nullable
+as ReturnReasonType,managerNote: freezed == managerNote ? _self.managerNote : managerNote // ignore: cast_nullable_to_non_nullable
+as String?,reviewNote: freezed == reviewNote ? _self.reviewNote : reviewNote // ignore: cast_nullable_to_non_nullable
+as String?,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
+as ReturnRequestStatus,requestedBy: freezed == requestedBy ? _self.requestedBy : requestedBy // ignore: cast_nullable_to_non_nullable
+as EntityRef<AppUser>?,reviewedBy: freezed == reviewedBy ? _self.reviewedBy : reviewedBy // ignore: cast_nullable_to_non_nullable
+as EntityRef<AppUser>?,reviewedAt: freezed == reviewedAt ? _self.reviewedAt : reviewedAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,createdAt: freezed == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
 mixin _$TransferItem {
 
 @JsonKey(readValue: _readProduct)@ProductRefConverter() EntityRef<Product> get productId; int get quantity;
