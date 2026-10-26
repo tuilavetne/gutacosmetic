@@ -87,24 +87,51 @@ class OrderRepository {
     return PlacedOrder.fromJson(json);
   }
 
-  /// `POST /orders/offline` — tạo đơn offline tại quầy (trạng thái PENDING_APPROVAL).
-  /// Chỉ kiểm tra còn hàng, chưa giữ hàng trong kho.
-  Future<Order> createOfflineOrder(OfflineOrderRequest request) async {
+  /// `POST /orders/offline` — tạo đơn offline tại quầy.
+  ///
+  /// Mặc định là giỏ tạm (PENDING_APPROVAL): chỉ kiểm tra còn hàng, chưa giữ kho.
+  /// [submitToCashier] = true thì tạo và gửi thu ngân luôn (PENDING_PAYMENT,
+  /// giữ kho) trong một transaction — thiếu hàng thì không tạo đơn nào.
+  Future<Order> createOfflineOrder(
+    OfflineOrderRequest request, {
+    bool submitToCashier = false,
+  }) async {
     final json = await _api.post(
       '/orders/offline',
-      data: {
-        'storeId': request.storeId,
-        if (request.customerId != null) 'customerId': request.customerId,
-        'customerName': request.customerName,
-        'customerPhone': request.customerPhone,
-        'items': [
-          for (final item in request.items)
-            {'productId': item.productId, 'quantity': item.quantity},
-        ],
-      },
+      data: _offlineOrderBody(request, submitToCashier: submitToCashier),
     );
     return Order.fromJson(requireObject(json, 'order'));
   }
+
+  /// `PATCH /orders/:id/items` — Sales sửa giỏ tạm (thay toàn bộ sản phẩm và
+  /// khách) khi đơn còn PENDING_APPROVAL. [submitToCashier] = true thì lưu xong
+  /// gửi thu ngân luôn; thiếu hàng thì giỏ tạm giữ nguyên như trước.
+  Future<Order> updateOfflineOrder(
+    String orderId,
+    OfflineOrderRequest request, {
+    bool submitToCashier = false,
+  }) async {
+    final json = await _api.patch(
+      '/orders/$orderId/items',
+      data: _offlineOrderBody(request, submitToCashier: submitToCashier),
+    );
+    return Order.fromJson(requireObject(json, 'order'));
+  }
+
+  Map<String, Object?> _offlineOrderBody(
+    OfflineOrderRequest request, {
+    required bool submitToCashier,
+  }) => {
+    'storeId': request.storeId,
+    if (submitToCashier) 'submitToCashier': true,
+    if (request.customerId != null) 'customerId': request.customerId,
+    'customerName': request.customerName,
+    'customerPhone': request.customerPhone,
+    'items': [
+      for (final item in request.items)
+        {'productId': item.productId, 'quantity': item.quantity},
+    ],
+  };
 
   /// `PATCH /orders/:id/approve` — Sales duyệt giỏ tạm gửi thu ngân (chuyển sang PENDING_PAYMENT).
   /// Lúc này mới tăng reservedStock và giảm availableStock.

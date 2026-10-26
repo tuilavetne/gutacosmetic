@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../../app/theme.dart';
+import '../../../../core/network/api_exception.dart';
 import '../../../../core/utils/formatters.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_messenger.dart';
@@ -64,6 +65,15 @@ class PosCartBottomSheet extends ConsumerWidget {
                             fontSize: 11,
                             color: AppColors.muted,
                             fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      if (cart.isEditingDraft)
+                        Text(
+                          'Đang sửa giỏ tạm ${cart.editingOrderCode}',
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: AppColors.info,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                     ],
@@ -341,16 +351,18 @@ class PosCartBottomSheet extends ConsumerWidget {
                                     } catch (e) {
                                       if (context.mounted) {
                                         showAppSnackBar(
-                                          'Lỗi lưu giỏ tạm: $e',
+                                          'Lỗi lưu giỏ tạm: ${errorMessageOf(e)}',
                                           isError: true,
                                         );
                                       }
                                     }
                                   },
-                            child: const Text(
-                              'Lưu giỏ tạm\n(Chờ duyệt)',
+                            child: Text(
+                              cart.isEditingDraft
+                                  ? 'Cập nhật giỏ tạm\n(Chờ duyệt)'
+                                  : 'Lưu giỏ tạm\n(Chờ duyệt)',
                               textAlign: TextAlign.center,
-                              style: TextStyle(fontWeight: FontWeight.bold),
+                              style: const TextStyle(fontWeight: FontWeight.bold),
                             ),
                           ),
                         ),
@@ -375,7 +387,7 @@ class PosCartBottomSheet extends ConsumerWidget {
                               } catch (e) {
                                 if (context.mounted) {
                                   showAppSnackBar(
-                                    'Lỗi duyệt đơn: $e',
+                                    'Lỗi duyệt đơn: ${errorMessageOf(e)}',
                                     isError: true,
                                   );
                                 }

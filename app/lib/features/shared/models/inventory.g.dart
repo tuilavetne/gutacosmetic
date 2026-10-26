@@ -259,6 +259,7 @@ const _$ReceiptSourceEnumMap = {
   ReceiptSource.direct: 'DIRECT',
   ReceiptSource.salesRequest: 'SALES_REQUEST',
   ReceiptSource.transfer: 'TRANSFER',
+  ReceiptSource.returnRejected: 'RETURN_REJECTED',
 };
 
 _InventoryAdjustment _$InventoryAdjustmentFromJson(Map<String, dynamic> json) =>
@@ -314,6 +315,87 @@ const _$AdjustmentTypeEnumMap = {
   AdjustmentType.lost: 'LOST',
   AdjustmentType.expired: 'EXPIRED',
   AdjustmentType.other: 'OTHER',
+};
+
+_InventoryReturnRequest _$InventoryReturnRequestFromJson(
+  Map<String, dynamic> json,
+) => _InventoryReturnRequest(
+  id: json['_id'] as String,
+  storeId: _$JsonConverterFromJson<Object, EntityRef<Store>>(
+    _readStore(json, 'storeId'),
+    const StoreRefConverter().fromJson,
+  ),
+  productId: _$JsonConverterFromJson<Object, EntityRef<Product>>(
+    _readProduct(json, 'productId'),
+    const ProductRefConverter().fromJson,
+  ),
+  quantity: (json['quantity'] as num?)?.toInt() ?? 0,
+  currentAvailableStock: (json['currentAvailableStock'] as num?)?.toInt() ?? 0,
+  reasonType:
+      $enumDecodeNullable(_$ReturnReasonTypeEnumMap, json['reasonType']) ??
+      ReturnReasonType.other,
+  managerNote: json['managerNote'] as String?,
+  reviewNote: json['reviewNote'] as String?,
+  status:
+      $enumDecodeNullable(_$ReturnRequestStatusEnumMap, json['status']) ??
+      ReturnRequestStatus.pending,
+  requestedBy: _$JsonConverterFromJson<Object, EntityRef<AppUser>>(
+    json['requestedBy'],
+    const UserRefConverter().fromJson,
+  ),
+  reviewedBy: _$JsonConverterFromJson<Object, EntityRef<AppUser>>(
+    json['reviewedBy'],
+    const UserRefConverter().fromJson,
+  ),
+  reviewedAt: json['reviewedAt'] == null
+      ? null
+      : DateTime.parse(json['reviewedAt'] as String),
+  createdAt: json['createdAt'] == null
+      ? null
+      : DateTime.parse(json['createdAt'] as String),
+);
+
+Map<String, dynamic> _$InventoryReturnRequestToJson(
+  _InventoryReturnRequest instance,
+) => <String, dynamic>{
+  '_id': instance.id,
+  'storeId': ?_$JsonConverterToJson<Object, EntityRef<Store>>(
+    instance.storeId,
+    const StoreRefConverter().toJson,
+  ),
+  'productId': ?_$JsonConverterToJson<Object, EntityRef<Product>>(
+    instance.productId,
+    const ProductRefConverter().toJson,
+  ),
+  'quantity': instance.quantity,
+  'currentAvailableStock': instance.currentAvailableStock,
+  'reasonType': _$ReturnReasonTypeEnumMap[instance.reasonType]!,
+  'managerNote': ?instance.managerNote,
+  'reviewNote': ?instance.reviewNote,
+  'status': _$ReturnRequestStatusEnumMap[instance.status]!,
+  'requestedBy': ?_$JsonConverterToJson<Object, EntityRef<AppUser>>(
+    instance.requestedBy,
+    const UserRefConverter().toJson,
+  ),
+  'reviewedBy': ?_$JsonConverterToJson<Object, EntityRef<AppUser>>(
+    instance.reviewedBy,
+    const UserRefConverter().toJson,
+  ),
+  'reviewedAt': ?instance.reviewedAt?.toIso8601String(),
+  'createdAt': ?instance.createdAt?.toIso8601String(),
+};
+
+const _$ReturnReasonTypeEnumMap = {
+  ReturnReasonType.damaged: 'DAMAGED',
+  ReturnReasonType.defective: 'DEFECTIVE',
+  ReturnReasonType.expired: 'EXPIRED',
+  ReturnReasonType.other: 'OTHER',
+};
+
+const _$ReturnRequestStatusEnumMap = {
+  ReturnRequestStatus.pending: 'PENDING',
+  ReturnRequestStatus.approved: 'APPROVED',
+  ReturnRequestStatus.rejected: 'REJECTED',
 };
 
 _TransferItem _$TransferItemFromJson(Map<String, dynamic> json) =>

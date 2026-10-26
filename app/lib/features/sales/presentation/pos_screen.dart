@@ -6,6 +6,7 @@ import 'package:material_ui/material_ui.dart';
 import '../../../app/theme.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../core/widgets/app_messenger.dart';
+import '../../../core/widgets/confirm_dialog.dart';
 import '../../../core/widgets/state_views.dart';
 import '../../session/session_controller.dart';
 import '../../shared/models/models.dart';
@@ -76,6 +77,21 @@ class _PosScreenState extends ConsumerState<PosScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+          if (cart.isEditingDraft)
+            _EditingDraftBanner(
+              orderCode: cart.editingOrderCode ?? '',
+              onStop: () async {
+                final ok = await showConfirmDialog(
+                  context,
+                  title: 'Thôi sửa giỏ tạm?',
+                  message:
+                      'Các thay đổi chưa lưu sẽ bị bỏ. Giỏ tạm '
+                      '${cart.editingOrderCode} vẫn giữ như lần lưu trước.',
+                  confirmLabel: 'Thôi sửa',
+                );
+                if (ok) cartController.reset();
+              },
+            ),
           // Header: Customer bar + Search bar
           Container(
             color: Colors.white,
@@ -575,6 +591,36 @@ class _PosScreenState extends ConsumerState<PosScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Nhắc Sales đang thêm/bớt sản phẩm cho một giỏ tạm đã lưu.
+class _EditingDraftBanner extends StatelessWidget {
+  const _EditingDraftBanner({required this.orderCode, required this.onStop});
+
+  final String orderCode;
+  final VoidCallback onStop;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: AppColors.info.withValues(alpha: 0.08),
+      padding: const EdgeInsets.fromLTRB(16, 6, 8, 6),
+      child: Row(
+        children: [
+          const Icon(Icons.edit_note, color: AppColors.info),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'Đang sửa giỏ tạm $orderCode — chọn thêm sản phẩm rồi mở giỏ '
+              'để lưu hoặc gửi thu ngân.',
+              style: const TextStyle(fontSize: 12, color: AppColors.info),
+            ),
+          ),
+          TextButton(onPressed: onStop, child: const Text('Thôi sửa')),
+        ],
       ),
     );
   }

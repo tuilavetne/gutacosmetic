@@ -93,6 +93,7 @@ const acknowledgeRestockRequest = async (req, res, next) => {
 const receiveRestockRequest = async (req, res, next) => {
   try {
     const request = await inventoryService.receiveRestockRequest({
+      expiryDate: req.body.expiryDate,
       managerNote: req.body.managerNote,
       receivedQuantity: req.body.receivedQuantity,
       requestId: req.params.requestId,
@@ -108,6 +109,7 @@ const receiveRestockRequest = async (req, res, next) => {
 const receiveDirectStock = async (req, res, next) => {
   try {
     const receipt = await inventoryService.receiveDirectStock({
+      expiryDate: req.body.expiryDate,
       note: req.body.note,
       productId: req.body.productId,
       quantity: req.body.quantity,
@@ -116,6 +118,21 @@ const receiveDirectStock = async (req, res, next) => {
     });
 
     res.status(201).json({ receipt });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const updateInventoryExpiry = async (req, res, next) => {
+  try {
+    const inventory = await inventoryService.updateInventoryExpiry({
+      expiryDate: req.body.expiryDate,
+      productId: req.body.productId,
+      storeId: req.body.storeId,
+      user: req.user,
+    });
+
+    res.json({ inventory });
   } catch (error) {
     next(error);
   }
@@ -133,6 +150,22 @@ const createInventoryAdjustment = async (req, res, next) => {
     });
 
     res.status(201).json({ adjustment });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const getInventoryHistory = async (req, res, next) => {
+  try {
+    const entries = await inventoryService.getInventoryHistory({
+      limit: req.query.limit,
+      productId: req.query.productId,
+      storeId: req.query.storeId,
+      type: req.query.type,
+      user: req.user,
+    });
+
+    res.json({ entries });
   } catch (error) {
     next(error);
   }
@@ -246,10 +279,12 @@ module.exports = {
   getInventoryReceipts,
   getInventoryReturnRequests,
   getInventoryAlerts,
+  getInventoryHistory,
   getProductInventory,
   getRestockRequests,
   receiveDirectStock,
   receiveRestockRequest,
   reviewInventoryReturnRequest,
+  updateInventoryExpiry,
   updateRestockRequestStatus,
 };

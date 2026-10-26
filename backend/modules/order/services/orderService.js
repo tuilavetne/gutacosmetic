@@ -29,11 +29,6 @@ const generateOrderCode = () => {
 const MAX_ACTIVE_UNPAID_BANK_TRANSFER_ORDERS = Number(
   process.env.MAX_ACTIVE_UNPAID_BANK_TRANSFER_ORDERS || 3
 );
-const MAX_FAILED_BANK_TRANSFER_ORDERS_PER_DAY = Number(
-  process.env.MAX_FAILED_BANK_TRANSFER_ORDERS_PER_DAY || 10
-);
-const PAYMENT_ABUSE_WINDOW_MS = 24 * 60 * 60 * 1000;
-const MAX_POS_DISCOUNT_PERCENT = 100;
 
 const assertRole = (user, allowedRoles) => {
   if (!allowedRoles.includes(user.role)) {
@@ -125,98 +120,32 @@ const awardCustomerPoints = async (order, session) => {
   return customer;
 };
 
-const expireUnpaidBankTransferOrders = async (query = {}, session) => {
-  const now = new Date();
-  const expiredOrders = await Order.find({
-    ...query,
-    channel: ORDER_CHANNELS.ONLINE,
-    paymentMethod: PAYMENT_METHODS.BANK_TRANSFER,
-    paymentStatus: PAYMENT_STATUSES.UNPAID,
-    status: ORDER_STATUSES.PENDING,
-    paymentExpiresAt: { $lte: now },
-  }).session(session || null);
-
-  for (const order of expiredOrders) {
-    if (order.inventoryReserved) {
-      await inventoryService.releaseReservedStock(
-        order.storeId,
-        order.items,
-        session
-      );
-      order.inventoryReserved = false;
-    }
-
-    order.paymentStatus = PAYMENT_STATUSES.FAILED;
-    order.cancelledAt = now;
-    order.cancellationReason = "PayOS payment QR expired";
-    appendStatus(
-      order,
-      ORDER_STATUSES.CANCELLED,
-      null,
-      "PayOS payment QR expired before payment was received"
-    );
-    await order.save({ session });
-  }
-
-  return expiredOrders.length;
-};
+// Đơn chuyển khoản không còn tự hủy khi QR hết hạn: Manager vẫn chuẩn bị hàng,
+// khách tạo QR mới để chuyển khoản hoặc trả tiền mặt khi nhận hàng. Chỉ giới
+// hạn số đơn chuyển khoản chưa trả đang xử lý để chống đặt đơn rác.
+const ACTIVE_ORDER_STATUSES = [
+  ORDER_STATUSES.PENDING,
+  ORDER_STATUSES.PREPARING,
+  ORDER_STATUSES.READY_FOR_PICKUP,
+];
 
 const enforceBankTransferOrderLimits = async (customer, session) => {
-  const now = new Date();
   const activeUnpaidCount = await Order.countDocuments({
     customerId: customer._id,
     channel: ORDER_CHANNELS.ONLINE,
     paymentMethod: PAYMENT_METHODS.BANK_TRANSFER,
     paymentStatus: PAYMENT_STATUSES.UNPAID,
-    status: ORDER_STATUSES.PENDING,
-    $or: [
-      { paymentExpiresAt: null },
-      { paymentExpiresAt: { $gt: now } },
-    ],
+    status: { $in: ACTIVE_ORDER_STATUSES },
   }).session(session || null);
 
   if (activeUnpaidCount >= MAX_ACTIVE_UNPAID_BANK_TRANSFER_ORDERS) {
     throw new AppError(
-      "You have too many unpaid bank transfer orders. Please pay or wait for old QR codes to expire.",
+      "You have too many unpaid bank transfer orders. Please pay them first.",
       429,
       "TOO_MANY_UNPAID_BANK_TRANSFER_ORDERS",
       {
         activeUnpaidCount,
         limit: MAX_ACTIVE_UNPAID_BANK_TRANSFER_ORDERS,
-      }
-    );
-  }
-
-  const failedSince = new Date(now.getTime() - PAYMENT_ABUSE_WINDOW_MS);
-  const failedCount = await Order.countDocuments({
-    customerId: customer._id,
-    channel: ORDER_CHANNELS.ONLINE,
-    paymentMethod: PAYMENT_METHODS.BANK_TRANSFER,
-    paymentStatus: PAYMENT_STATUSES.FAILED,
-    updatedAt: { $gte: failedSince },
-  }).session(session || null);
-
-  if (failedCount >= MAX_FAILED_BANK_TRANSFER_ORDERS_PER_DAY) {
-    await User.updateOne(
-      { _id: customer._id },
-      {
-        $set: {
-          isActive: false,
-          disabledAt: now,
-          disabledReason:
-            "Automatically disabled because too many PayOS bank transfer orders expired unpaid",
-        },
-      },
-      { session }
-    );
-
-    throw new AppError(
-      "This account has been disabled because too many bank transfer orders expired unpaid.",
-      403,
-      "ACCOUNT_DISABLED_PAYMENT_ABUSE",
-      {
-        failedCount,
-        limit: MAX_FAILED_BANK_TRANSFER_ORDERS_PER_DAY,
       }
     );
   }
@@ -288,8 +217,6 @@ const createOnlineOrder = async (payload, customer) => {
   const isBankTransfer = paymentMethod === PAYMENT_METHODS.BANK_TRANSFER;
 
   return runInTransaction(async (session) => {
-    await expireUnpaidBankTransferOrders({ customerId: customer._id }, session);
-
     if (isBankTransfer) {
       await enforceBankTransferOrderLimits(customer, session);
     }
@@ -331,13 +258,46 @@ const createOnlineOrder = async (payload, customer) => {
   });
 };
 
+// Kho phải được giữ (reserveStock) trước khi gọi.
+const markSentToCashier = (order, salesUser) => {
+  order.inventoryReserved = true;
+  order.approvedBySalesId = salesUser._id;
+  appendStatus(
+    order,
+    ORDER_STATUSES.PENDING_PAYMENT,
+    salesUser._id,
+    "Sales approved order and sent it to Manager"
+  );
+};
+
+const assertEditableOfflineCart = (order) => {
+  if (
+    order.channel !== ORDER_CHANNELS.OFFLINE ||
+    order.status !== ORDER_STATUSES.PENDING_APPROVAL
+  ) {
+    throw new AppError(
+      "Only pending offline orders can be changed",
+      409,
+      "INVALID_ORDER_STATE"
+    );
+  }
+};
+
+// `submitToCashier: true` tạo đơn và gửi thu ngân (giữ kho) trong cùng một
+// transaction: thiếu hàng thì không tạo đơn nào, tránh để lại giỏ tạm mồ côi.
 const createOfflineOrder = async (payload, salesUser) => {
   assertRole(salesUser, [USER_ROLES.SALES]);
   assertAssignedStore(salesUser, payload.storeId);
+  const submitToCashier = payload.submitToCashier === true;
 
   return runInTransaction(async (session) => {
     const items = await buildOrderItems(payload.items, session);
-    await inventoryService.assertAvailableStock(payload.storeId, items, session);
+
+    if (submitToCashier) {
+      await inventoryService.reserveStock(payload.storeId, items, session);
+    } else {
+      await inventoryService.assertAvailableStock(payload.storeId, items, session);
+    }
 
     const order = new Order({
       orderCode: generateOrderCode(),
@@ -363,6 +323,49 @@ const createOfflineOrder = async (payload, salesUser) => {
       ],
     });
 
+    if (submitToCashier) {
+      markSentToCashier(order, salesUser);
+    }
+
+    await order.save({ session });
+    return order;
+  });
+};
+
+// Sales sửa giỏ tạm (thêm/bớt sản phẩm, đổi khách) khi đơn còn chờ duyệt.
+// Giá lấy lại theo giá hiện tại. `submitToCashier: true` thì lưu xong gửi thu
+// ngân luôn; thiếu hàng thì giỏ tạm giữ nguyên như trước khi sửa.
+const updateOfflineOrder = (orderId, payload, salesUser) => {
+  assertRole(salesUser, [USER_ROLES.SALES]);
+  const submitToCashier = payload.submitToCashier === true;
+
+  return runInTransaction(async (session) => {
+    const order = await findOrderOrThrow(orderId, session);
+    assertAssignedStore(salesUser, order.storeId);
+    assertEditableOfflineCart(order);
+
+    const items = await buildOrderItems(payload.items, session);
+
+    if (submitToCashier) {
+      await inventoryService.reserveStock(order.storeId, items, session);
+    } else {
+      await inventoryService.assertAvailableStock(order.storeId, items, session);
+    }
+
+    order.items = items;
+    order.customerId = payload.customerId || null;
+    order.customerName = payload.customerName ?? order.customerName;
+    order.customerPhone = payload.customerPhone ?? order.customerPhone;
+    order.statusHistory.push({
+      status: ORDER_STATUSES.PENDING_APPROVAL,
+      changedBy: salesUser._id,
+      note: "Sales updated the cart",
+    });
+
+    if (submitToCashier) {
+      markSentToCashier(order, salesUser);
+    }
+
     await order.save({ session });
     return order;
   });
@@ -374,42 +377,22 @@ const approveOfflineOrder = (orderId, salesUser) => {
   return runInTransaction(async (session) => {
     const order = await findOrderOrThrow(orderId, session);
     assertAssignedStore(salesUser, order.storeId);
-
-    if (
-      order.channel !== ORDER_CHANNELS.OFFLINE ||
-      order.status !== ORDER_STATUSES.PENDING_APPROVAL
-    ) {
-      throw new AppError(
-        "Only pending offline orders can be approved",
-        409,
-        "INVALID_ORDER_STATE"
-      );
-    }
+    assertEditableOfflineCart(order);
 
     await inventoryService.reserveStock(order.storeId, order.items, session);
-    order.inventoryReserved = true;
-    order.approvedBySalesId = salesUser._id;
-    appendStatus(
-      order,
-      ORDER_STATUSES.PENDING_PAYMENT,
-      salesUser._id,
-      "Sales approved order and sent it to Manager"
-    );
+    markSentToCashier(order, salesUser);
     await order.save({ session });
     return order;
   });
 };
 
-const payOfflineOrder = (orderId, paymentMethod, manager, options = {}) => {
-  assertRole(manager, [USER_ROLES.MANAGER, USER_ROLES.SALES]);
+// Sales không thu tiền: chỉ Manager/Thu ngân xác nhận thanh toán đơn tại quầy.
+// Thu tay chỉ tiền mặt/thẻ — chuyển khoản phải qua QR PayOS để có xác nhận
+// tiền đã về. Không có chiết khấu thủ công: thu đúng tổng tiền đơn.
+const payOfflineOrder = (orderId, paymentMethod, manager) => {
+  assertRole(manager, [USER_ROLES.MANAGER]);
 
-  if (
-    ![
-      PAYMENT_METHODS.CASH,
-      PAYMENT_METHODS.CARD,
-      PAYMENT_METHODS.BANK_TRANSFER,
-    ].includes(paymentMethod)
-  ) {
+  if (![PAYMENT_METHODS.CASH, PAYMENT_METHODS.CARD].includes(paymentMethod)) {
     throw new AppError(
       "POS payment method is invalid",
       400,
@@ -433,19 +416,8 @@ const payOfflineOrder = (orderId, paymentMethod, manager, options = {}) => {
       );
     }
 
-    const requestedDiscountPercent = Math.max(
-      0,
-      Math.min(
-        MAX_POS_DISCOUNT_PERCENT,
-        Number(options.discountPercent || 0)
-      )
-    );
-    const maxDiscountAmount = order.subtotal + order.shippingFee;
     order.pointsUsed = 0;
-    order.discountAmount = Math.min(
-      maxDiscountAmount,
-      Math.floor((maxDiscountAmount * requestedDiscountPercent) / 100)
-    );
+    order.discountAmount = 0;
 
     await inventoryService.completeReservedSale(
       order.storeId,
@@ -471,17 +443,18 @@ const payOfflineOrder = (orderId, paymentMethod, manager, options = {}) => {
   });
 };
 
-const updateOnlineStatus = (orderId, nextStatus, manager) => {
+// Giao tận nơi: PENDING -> PREPARING -> COMPLETED.
+// Nhận tại cửa hàng: PENDING -> PREPARING -> READY_FOR_PICKUP -> COMPLETED.
+// Hoàn tất đơn chuyển khoản mà khách chưa chuyển: Manager phải xác nhận đã thu
+// tiền mặt (`collectedCash`) — ghi CASH (nhận tại cửa hàng) hoặc COD (giao).
+const updateOnlineStatus = (orderId, nextStatus, manager, options = {}) => {
   assertRole(manager, [USER_ROLES.MANAGER]);
 
   return runInTransaction(async (session) => {
     const order = await findOrderOrThrow(orderId, session);
     assertAssignedStore(manager, order.storeId);
     const allowedTransitions = {
-      [ORDER_STATUSES.PENDING]:
-        order.fulfillmentType === FULFILLMENT_TYPES.STORE_PICKUP
-          ? [ORDER_STATUSES.PREPARING, ORDER_STATUSES.READY_FOR_PICKUP]
-          : [ORDER_STATUSES.PREPARING],
+      [ORDER_STATUSES.PENDING]: [ORDER_STATUSES.PREPARING],
       [ORDER_STATUSES.PREPARING]:
         order.fulfillmentType === FULFILLMENT_TYPES.DELIVERY
           ? [ORDER_STATUSES.COMPLETED]
@@ -500,6 +473,8 @@ const updateOnlineStatus = (orderId, nextStatus, manager) => {
       );
     }
 
+    let note = "";
+
     if (nextStatus === ORDER_STATUSES.COMPLETED) {
       if (!order.inventoryReserved) {
         throw new AppError(
@@ -509,6 +484,35 @@ const updateOnlineStatus = (orderId, nextStatus, manager) => {
         );
       }
 
+      // Kiểm tra thanh toán trước khi trừ kho: không có transaction (Mongo
+      // standalone) thì lỗi sau khi trừ kho sẽ làm lệch tồn.
+      if (order.paymentStatus !== PAYMENT_STATUSES.PAID) {
+        const paysCashOnReceipt = [
+          PAYMENT_METHODS.COD,
+          PAYMENT_METHODS.PAY_AT_STORE,
+        ].includes(order.paymentMethod);
+
+        if (!paysCashOnReceipt) {
+          if (options.collectedCash !== true) {
+            throw new AppError(
+              "Customer has not paid by bank transfer; confirm cash collection to complete",
+              409,
+              "PAYMENT_REQUIRED"
+            );
+          }
+
+          order.paymentMethod =
+            order.fulfillmentType === FULFILLMENT_TYPES.DELIVERY
+              ? PAYMENT_METHODS.COD
+              : PAYMENT_METHODS.CASH;
+          note = "Customer did not pay by bank transfer; cash collected on receipt";
+        }
+
+        order.paymentStatus = PAYMENT_STATUSES.PAID;
+        order.paidByManagerId = manager._id;
+        order.paidAt = new Date();
+      }
+
       await inventoryService.completeReservedSale(
         order.storeId,
         order.items,
@@ -516,36 +520,17 @@ const updateOnlineStatus = (orderId, nextStatus, manager) => {
       );
       order.inventoryReserved = false;
       order.completedAt = new Date();
-
-      if (
-        order.paymentStatus === PAYMENT_STATUSES.UNPAID &&
-        [PAYMENT_METHODS.COD, PAYMENT_METHODS.PAY_AT_STORE].includes(
-          order.paymentMethod
-        )
-      ) {
-        order.paymentStatus = PAYMENT_STATUSES.PAID;
-        order.paidByManagerId = manager._id;
-        order.paidAt = new Date();
-      }
-
-      if (order.paymentStatus !== PAYMENT_STATUSES.PAID) {
-        throw new AppError(
-          "Online payment must be confirmed before completing this order",
-          409,
-          "PAYMENT_REQUIRED"
-        );
-      }
-
       await awardCustomerPoints(order, session);
     }
 
-    appendStatus(order, nextStatus, manager._id);
+    appendStatus(order, nextStatus, manager._id, note);
     await order.save({ session });
     return order;
   });
 };
 
-// Khách bắt buộc nhập lý do 15–255 ký tự; nhân viên được để trống.
+// Khách bắt buộc nhập lý do 15–255 ký tự; nhân viên được để trống (riêng
+// Manager hủy đơn online thì bắt buộc — kiểm tra trong cancelOrder).
 const normalizeCancellationReason = (reason, actor) => {
   const isCustomer = actor.role === USER_ROLES.CUSTOMER;
 
@@ -609,6 +594,31 @@ const cancelOrder = (orderId, actor, rawReason) =>
         );
       }
     } else if ([USER_ROLES.MANAGER, USER_ROLES.SALES].includes(actor.role)) {
+      // Sales chỉ phụ trách đơn tại quầy; đơn online do Manager xử lý.
+      if (
+        actor.role === USER_ROLES.SALES &&
+        order.channel !== ORDER_CHANNELS.OFFLINE
+      ) {
+        throw new AppError(
+          "Sales can only cancel in-store orders",
+          403,
+          "FORBIDDEN"
+        );
+      }
+
+      // Manager hủy đơn online phải ghi lý do để khách và cửa hàng đối chiếu.
+      if (
+        order.channel === ORDER_CHANNELS.ONLINE &&
+        reason.length < CANCELLATION_REASON_MIN_LENGTH
+      ) {
+        throw new AppError(
+          "Vui lòng nhập lý do hủy đơn chi tiết hơn (ít nhất 15 ký tự).",
+          400,
+          "INVALID_CANCELLATION_REASON",
+          { minLength: CANCELLATION_REASON_MIN_LENGTH }
+        );
+      }
+
       assertAssignedStore(actor, order.storeId);
     } else {
       assertRole(actor, [USER_ROLES.OWNER]);
@@ -666,7 +676,6 @@ const getOrdersForUser = async (user, filters = {}) => {
   const query = {};
 
   if (user.role === USER_ROLES.CUSTOMER) {
-    await expireUnpaidBankTransferOrders({ customerId: user._id });
     query.customerId = user._id;
   } else if ([USER_ROLES.MANAGER, USER_ROLES.SALES].includes(user.role)) {
     if (!user.storeId) {
@@ -718,8 +727,6 @@ const getOrderForUser = async (orderId, user) => {
     throw new AppError("Order ID is invalid", 400, "INVALID_ORDER_ID");
   }
 
-  await expireUnpaidBankTransferOrders({ _id: orderId });
-
   const order = await Order.findById(orderId)
     .populate("customerId", "fullName email phone points")
     .populate("storeId", "name address phone")
@@ -752,10 +759,10 @@ module.exports = {
   cancelOrder,
   createOfflineOrder,
   createOnlineOrder,
-  expireUnpaidBankTransferOrders,
   generateOrderCode,
   getOrderForUser,
   getOrdersForUser,
   payOfflineOrder,
+  updateOfflineOrder,
   updateOnlineStatus,
 };
