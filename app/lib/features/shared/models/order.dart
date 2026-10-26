@@ -140,9 +140,14 @@ abstract class Order with _$Order {
   bool get isPaid => paymentStatus == PaymentStatus.paid;
   bool get awaitsRefund => refundStatus == RefundStatus.pendingRefund;
 
-  /// Đơn chuyển khoản chưa trả, còn có thể thanh toán.
+  /// Đơn chuyển khoản chưa trả, còn có thể thanh toán — kể cả khi cửa hàng đã
+  /// bắt đầu chuẩn bị hàng (QR hết hạn không còn hủy đơn).
   bool get awaitsBankTransfer =>
       isBankTransfer &&
       paymentStatus == PaymentStatus.unpaid &&
-      status == OrderStatus.pending;
+      const {
+        OrderStatus.pending,
+        OrderStatus.preparing,
+        OrderStatus.readyForPickup,
+      }.contains(status);
 }

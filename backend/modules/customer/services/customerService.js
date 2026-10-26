@@ -1,7 +1,9 @@
+const mongoose = require("mongoose");
 const User = require("../../../models/User");
 const Order = require("../../../models/Order");
 const RewardRedemption = require("../../../models/RewardRedemption");
 const AppError = require("../../../utils/AppError");
+const { runInTransaction } = require("../../stock/services/transactionService");
 const {
   avatarPublicIdFromUrl,
   cloudinary,
@@ -169,9 +171,16 @@ const updateProfile = async (userId, payload) => {
   return user.toJSON();
 };
 
+const REWARD_NAME_MAX_LENGTH = 120;
+const REDEMPTION_NOTE_MAX_LENGTH = 300;
+
+// Manager đổi quà cho khách tại quầy: trừ điểm và lưu lịch sử. Trừ điểm bằng
+// điều kiện `points >= pointsUsed` trong cùng một lệnh nên hai thu ngân đổi
+// cùng lúc không làm điểm âm.
 const redeemCustomerPoints = async ({ customerId, manager, note, points, rewardName }) => {
-  const pointsUsed = Number.parseInt(points, 10);
+  const pointsUsed = Number(points);
   const normalizedRewardName = String(rewardName || "").trim();
+  const normalizedNote = String(note || "").trim();
 
   if (!Number.isInteger(pointsUsed) || pointsUsed <= 0) {
     throw new AppError(
@@ -189,6 +198,17 @@ const redeemCustomerPoints = async ({ customerId, manager, note, points, rewardN
     );
   }
 
+  if (
+    normalizedRewardName.length > REWARD_NAME_MAX_LENGTH ||
+    normalizedNote.length > REDEMPTION_NOTE_MAX_LENGTH
+  ) {
+    throw new AppError(
+      "Reward name or note is too long",
+      400,
+      "REWARD_TEXT_TOO_LONG"
+    );
+  }
+
   if (!manager.storeId) {
     throw new AppError(
       "Manager account is not assigned to a store",
@@ -197,44 +217,92 @@ const redeemCustomerPoints = async ({ customerId, manager, note, points, rewardN
     );
   }
 
-  const customer = await User.findOne({
-    _id: customerId,
-    role: USER_ROLES.CUSTOMER,
-    isActive: true,
-  });
-
-  if (!customer) {
+  if (!mongoose.isValidObjectId(customerId)) {
     throw new AppError("Customer was not found", 404, "CUSTOMER_NOT_FOUND");
   }
 
-  if (customer.points < pointsUsed) {
-    throw new AppError(
-      "Customer does not have enough points",
-      409,
-      "INSUFFICIENT_POINTS"
+  return runInTransaction(async (session) => {
+    const customerFilter = {
+      _id: customerId,
+      role: USER_ROLES.CUSTOMER,
+      isActive: true,
+    };
+    const customer = await User.findOneAndUpdate(
+      { ...customerFilter, points: { $gte: pointsUsed } },
+      { $inc: { points: -pointsUsed } },
+      { new: true, session }
     );
+
+    if (!customer) {
+      const exists = await User.exists(customerFilter).session(session || null);
+      throw exists
+        ? new AppError(
+            "Customer does not have enough points",
+            409,
+            "INSUFFICIENT_POINTS"
+          )
+        : new AppError("Customer was not found", 404, "CUSTOMER_NOT_FOUND");
+    }
+
+    const [redemption] = await RewardRedemption.create(
+      [
+        {
+          customerId: customer._id,
+          storeId: manager.storeId,
+          redeemedBy: manager._id,
+          rewardName: normalizedRewardName,
+          pointsUsed,
+          note: normalizedNote,
+        },
+      ],
+      { session }
+    );
+
+    return {
+      customer: customer.toJSON(),
+      redemption,
+    };
+  });
+};
+
+// Lịch sử đổi quà: theo khách (mọi chi nhánh) khi có `customerId`, ngược lại
+// là các lần đổi quà tại chi nhánh đang làm.
+const getRedemptions = async ({ customerId, limit, manager }) => {
+  const parsedLimit = Number.parseInt(limit, 10);
+  const max =
+    Number.isInteger(parsedLimit) && parsedLimit > 0
+      ? Math.min(parsedLimit, 200)
+      : 50;
+  let query;
+
+  if (customerId) {
+    if (!mongoose.isValidObjectId(customerId)) {
+      throw new AppError("Customer was not found", 404, "CUSTOMER_NOT_FOUND");
+    }
+    query = { customerId };
+  } else {
+    if (!manager.storeId) {
+      throw new AppError(
+        "Manager account is not assigned to a store",
+        403,
+        "STORE_ASSIGNMENT_REQUIRED"
+      );
+    }
+    query = { storeId: manager.storeId };
   }
 
-  customer.points -= pointsUsed;
-  await customer.save();
-
-  const redemption = await RewardRedemption.create({
-    customerId: customer._id,
-    storeId: manager.storeId,
-    redeemedBy: manager._id,
-    rewardName: normalizedRewardName,
-    pointsUsed,
-    note: String(note || "").trim(),
-  });
-
-  return {
-    customer: customer.toJSON(),
-    redemption,
-  };
+  return RewardRedemption.find(query)
+    .populate("customerId", "fullName phone email points role")
+    .populate("storeId", "name")
+    .populate("redeemedBy", "fullName role")
+    .sort({ createdAt: -1 })
+    .limit(max)
+    .lean();
 };
 
 module.exports = {
   checkPhoneAvailable,
+  getRedemptions,
   redeemCustomerPoints,
   removeAvatar,
   updateAvatar,

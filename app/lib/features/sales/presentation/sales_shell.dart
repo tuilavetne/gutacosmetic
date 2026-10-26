@@ -6,9 +6,30 @@ import '../../../app/routes.dart';
 import '../../../app/theme.dart';
 import '../../../core/widgets/confirm_dialog.dart';
 import '../../session/session_controller.dart';
+import '../data/sales_repository.dart';
 import 'controllers/pos_cart_controller.dart';
 import 'pos_screen.dart';
 import 'sales_orders_screen.dart';
+import 'sales_stock_screen.dart';
+
+/// Thứ tự trùng với các tab dưới cùng của [SalesShell].
+enum SalesTab { pos, orders, stock }
+
+/// Tab Sales đang mở. Màn khác (ví dụ chi tiết giỏ tạm) đổi tab qua đây;
+/// về tab POS mỗi khi đổi tài khoản.
+final salesTabProvider = NotifierProvider<SalesTabController, SalesTab>(
+  SalesTabController.new,
+);
+
+class SalesTabController extends Notifier<SalesTab> {
+  @override
+  SalesTab build() {
+    ref.watch(currentUserProvider.select((user) => user?.id));
+    return SalesTab.pos;
+  }
+
+  void show(SalesTab tab) => state = tab;
+}
 
 class SalesShell extends ConsumerStatefulWidget {
   const SalesShell({super.key});
@@ -18,11 +39,10 @@ class SalesShell extends ConsumerStatefulWidget {
 }
 
 class _SalesShellState extends ConsumerState<SalesShell> {
-  int _currentIndex = 0;
-
   final _pages = const [
     PosScreen(),
     SalesOrdersScreen(),
+    SalesStockScreen(),
   ];
 
   Future<void> _logout() async {
@@ -43,6 +63,14 @@ class _SalesShellState extends ConsumerState<SalesShell> {
   Widget build(BuildContext context) {
     final user = ref.watch(currentUserProvider);
     final activeStore = ref.watch(activeStoreProvider);
+    final currentIndex = ref.watch(salesTabProvider).index;
+    // Hết hàng / đã hết hạn: báo trên tab Kho để Sales đề xuất kịp.
+    final criticalAlerts = ref
+            .watch(salesInventoryAlertsProvider)
+            .value
+            ?.where((alert) => alert.isCritical)
+            .length ??
+        0;
 
     return Scaffold(
       appBar: AppBar(
@@ -118,24 +146,37 @@ class _SalesShellState extends ConsumerState<SalesShell> {
         ],
       ),
       body: IndexedStack(
-        index: _currentIndex,
+        index: currentIndex,
         children: _pages,
       ),
       bottomNavigationBar: NavigationBar(
-        selectedIndex: _currentIndex,
+        selectedIndex: currentIndex,
         onDestinationSelected: (index) {
-          setState(() => _currentIndex = index);
+          ref.read(salesTabProvider.notifier).show(SalesTab.values[index]);
         },
-        destinations: const [
-          NavigationDestination(
+        destinations: [
+          const NavigationDestination(
             icon: Icon(Icons.point_of_sale_outlined),
             selectedIcon: Icon(Icons.point_of_sale, color: AppColors.primary),
             label: 'Bán hàng (POS)',
           ),
-          NavigationDestination(
+          const NavigationDestination(
             icon: Icon(Icons.receipt_long_outlined),
             selectedIcon: Icon(Icons.receipt_long, color: AppColors.primary),
             label: 'Đơn tại quầy',
+          ),
+          NavigationDestination(
+            icon: Badge(
+              isLabelVisible: criticalAlerts > 0,
+              label: Text('$criticalAlerts'),
+              child: const Icon(Icons.inventory_2_outlined),
+            ),
+            selectedIcon: Badge(
+              isLabelVisible: criticalAlerts > 0,
+              label: Text('$criticalAlerts'),
+              child: const Icon(Icons.inventory_2, color: AppColors.primary),
+            ),
+            label: 'Kho',
           ),
         ],
       ),

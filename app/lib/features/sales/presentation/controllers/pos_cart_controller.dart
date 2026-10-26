@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/utils/constants.dart';
+import '../../../customer/data/order_repository.dart';
 import '../../../session/session_controller.dart';
 import '../../../shared/models/models.dart';
 import '../../data/sales_repository.dart';
@@ -37,6 +38,8 @@ class PosCartState {
     this.customPhone = '',
     this.items = const [],
     this.isSubmitting = false,
+    this.editingOrderId,
+    this.editingOrderCode,
   });
 
   final String? storeId;
@@ -45,6 +48,13 @@ class PosCartState {
   final String customPhone;
   final List<PosCartLine> items;
   final bool isSubmitting;
+
+  /// Giỏ tạm (đơn chờ duyệt) đang được mở lại để thêm/bớt sản phẩm; `null`
+  /// khi đang soạn giỏ mới.
+  final String? editingOrderId;
+  final String? editingOrderCode;
+
+  bool get isEditingDraft => editingOrderId != null;
 
   String get effectiveCustomerName {
     if (customer != null && customer!.fullName.isNotEmpty) {
@@ -83,6 +93,9 @@ class PosCartState {
       customPhone: customPhone ?? this.customPhone,
       items: items ?? this.items,
       isSubmitting: isSubmitting ?? this.isSubmitting,
+      // Giữ nguyên: chỉ loadDraft/reset mới đổi giỏ tạm đang sửa.
+      editingOrderId: editingOrderId,
+      editingOrderCode: editingOrderCode,
     );
   }
 }
@@ -203,40 +216,86 @@ class PosCartController extends Notifier<PosCartState> {
     state = PosCartState(storeId: activeStore?.id);
   }
 
-  /// Nghiệp vụ 15: Tạo giỏ tạm (PENDING_APPROVAL) - Chưa giữ hàng trong kho
-  Future<Order> createDraftOrder() async {
+  /// Mở lại giỏ tạm (đơn chờ duyệt) vào POS để Sales thêm/bớt sản phẩm.
+  ///
+  /// Tồn kho lấy mới từ server để giới hạn số lượng đúng thời điểm hiện tại.
+  Future<void> loadDraft(Order order) async {
     final activeStore = ref.read(activeStoreProvider);
     if (activeStore == null) {
       throw StateError('Chưa chọn chi nhánh làm việc');
     }
-    if (state.isEmpty) {
-      throw StateError('Giỏ hàng đang trống');
-    }
 
-    state = state.copyWith(isSubmitting: true);
-    try {
-      final repo = ref.read(salesRepositoryProvider);
-      final request = (
-        storeId: activeStore.id,
-        customerId: state.customerId,
-        customerName: state.effectiveCustomerName,
-        customerPhone: state.effectiveCustomerPhone,
-        items: [
-          for (final line in state.items)
-            (productId: line.product.id, quantity: line.quantity),
-        ],
-      );
+    final inventories = await ref
+        .read(salesRepositoryProvider)
+        .fetchProductsWithInventory(
+          productIds: [for (final item in order.items) item.productId.id],
+        );
+    final byId = {for (final inv in inventories) inv.product.id: inv};
 
-      final order = await repo.createOfflineOrder(request);
-      reset();
-      return order;
-    } finally {
-      state = state.copyWith(isSubmitting: false);
-    }
+    final member = order.customerId;
+    state = PosCartState(
+      storeId: activeStore.id,
+      editingOrderId: order.id,
+      editingOrderCode: order.orderCode,
+      customer: member == null
+          ? null
+          : CustomerSearchResult(
+              id: member.id,
+              fullName: member.data?.fullName ?? order.customerName ?? '',
+              phone: member.data?.phone ?? order.customerPhone,
+              points: member.data?.points ?? 0,
+            ),
+      customName: order.customerName ?? '',
+      customPhone: order.customerPhone ?? '',
+      items: [
+        for (final item in order.items)
+          PosCartLine(
+            product:
+                byId[item.productId.id]?.product ??
+                Product(
+                  id: item.productId.id,
+                  sku: item.sku,
+                  name: item.name,
+                  image: item.image,
+                  price: item.unitPrice,
+                ),
+            quantity: item.quantity,
+            availableStock:
+                byId[item.productId.id]?.availableAt(activeStore.id) ?? 0,
+          ),
+      ],
+    );
   }
 
-  /// Nghiệp vụ 15: Duyệt giỏ gửi thu ngân (PENDING_PAYMENT) - Lúc này mới tăng reservedStock
-  Future<Order> submitAndApproveOrder() async {
+  /// Nghiệp vụ 15: Lưu giỏ tạm (PENDING_APPROVAL) - Chưa giữ hàng trong kho.
+  /// Đang mở lại giỏ tạm thì cập nhật chính đơn đó thay vì tạo đơn mới.
+  Future<Order> createDraftOrder() {
+    final draftId = state.editingOrderId;
+    return _submit(
+      (repo, request) => draftId == null
+          ? repo.createOfflineOrder(request)
+          : repo.updateDraftOrder(draftId, request),
+    );
+  }
+
+  /// Nghiệp vụ 15: Duyệt giỏ gửi thu ngân (PENDING_PAYMENT) - Giữ kho ngay.
+  ///
+  /// Tạo (hoặc lưu giỏ tạm đang sửa) và gửi thu ngân trong một request: nếu
+  /// thiếu hàng thì backend không tạo/đổi đơn nào và giỏ được giữ nguyên để
+  /// Sales chỉnh rồi gửi lại.
+  Future<Order> submitAndApproveOrder() {
+    final draftId = state.editingOrderId;
+    return _submit(
+      (repo, request) => draftId == null
+          ? repo.submitOfflineOrder(request)
+          : repo.submitDraftOrder(draftId, request),
+    );
+  }
+
+  Future<Order> _submit(
+    Future<Order> Function(SalesRepository repo, OfflineOrderRequest request)
+    send,
+  ) async {
     final activeStore = ref.read(activeStoreProvider);
     if (activeStore == null) {
       throw StateError('Chưa chọn chi nhánh làm việc');
@@ -247,7 +306,6 @@ class PosCartController extends Notifier<PosCartState> {
 
     state = state.copyWith(isSubmitting: true);
     try {
-      final repo = ref.read(salesRepositoryProvider);
       final request = (
         storeId: activeStore.id,
         customerId: state.customerId,
@@ -259,10 +317,9 @@ class PosCartController extends Notifier<PosCartState> {
         ],
       );
 
-      final order = await repo.createOfflineOrder(request);
-      final approvedOrder = await repo.approveOfflineOrder(order.id);
+      final order = await send(ref.read(salesRepositoryProvider), request);
       reset();
-      return approvedOrder;
+      return order;
     } finally {
       state = state.copyWith(isSubmitting: false);
     }

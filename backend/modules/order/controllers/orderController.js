@@ -29,6 +29,19 @@ const createOfflineOrder = async (req, res, next) => {
   }
 };
 
+const updateOfflineOrder = async (req, res, next) => {
+  try {
+    const order = await orderService.updateOfflineOrder(
+      req.params.orderId,
+      req.body,
+      req.user
+    );
+    res.json({ order });
+  } catch (error) {
+    next(error);
+  }
+};
+
 const approveOfflineOrder = async (req, res, next) => {
   try {
     const order = await orderService.approveOfflineOrder(
@@ -43,13 +56,13 @@ const approveOfflineOrder = async (req, res, next) => {
 
 const payOfflineOrder = async (req, res, next) => {
   try {
+    // Khách đổi sang trả tiền mặt/thẻ sau khi đã tạo QR: hủy QR trước để
+    // khách không chuyển khoản thêm lần nữa.
+    await payosService.releasePaymentLinkBeforeCash(req.params.orderId, req.user);
     const order = await orderService.payOfflineOrder(
       req.params.orderId,
       req.body.paymentMethod,
-      req.user,
-      {
-        discountPercent: req.body.discountPercent,
-      }
+      req.user
     );
     res.json({ order });
   } catch (error) {
@@ -59,10 +72,21 @@ const payOfflineOrder = async (req, res, next) => {
 
 const updateOnlineStatus = async (req, res, next) => {
   try {
+    const collectedCash = req.body.collectedCash === true;
+
+    // Khách chưa chuyển khoản, trả tiền mặt khi nhận: hủy QR còn mở trước.
+    if (collectedCash) {
+      await payosService.releasePaymentLinkBeforeCash(
+        req.params.orderId,
+        req.user
+      );
+    }
+
     const order = await orderService.updateOnlineStatus(
       req.params.orderId,
       req.body.status,
-      req.user
+      req.user,
+      { collectedCash }
     );
     res.json({ order });
   } catch (error) {
@@ -115,5 +139,6 @@ module.exports = {
   getOrderById,
   getOrders,
   payOfflineOrder,
+  updateOfflineOrder,
   updateOnlineStatus,
 };

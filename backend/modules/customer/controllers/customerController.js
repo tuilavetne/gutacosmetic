@@ -63,8 +63,22 @@ const redeemCustomerPoints = async (req, res, next) => {
   }
 };
 
+const getRedemptions = async (req, res, next) => {
+  try {
+    const redemptions = await userService.getRedemptions({
+      customerId: req.query.customerId,
+      limit: req.query.limit,
+      manager: req.user,
+    });
+    res.json({ redemptions });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   checkPhoneAvailable,
+  getRedemptions,
   removeAvatar,
   updateAvatar,
   redeemCustomerPoints,
