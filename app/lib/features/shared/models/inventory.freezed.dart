@@ -930,7 +930,7 @@ as String?,
 /// @nodoc
 mixin _$RestockRequest {
 
-@JsonKey(name: '_id') String get id;@JsonKey(readValue: _readStore)@StoreRefConverter() EntityRef<Store>? get storeId;@JsonKey(readValue: _readProduct)@ProductRefConverter() EntityRef<Product>? get productId;@UserRefConverter() EntityRef<AppUser>? get requestedBy;@UserRefConverter() EntityRef<AppUser>? get handledBy;@UserRefConverter() EntityRef<AppUser>? get acknowledgedBy; int get currentAvailableStock; int get requestedQuantity; String? get reason; RestockStatus get status; String? get managerNote; DateTime? get resolvedAt; DateTime? get acknowledgedAt; DateTime? get createdAt; DateTime? get updatedAt;
+@JsonKey(name: '_id') String get id;@JsonKey(readValue: _readStore)@StoreRefConverter() EntityRef<Store>? get storeId;@JsonKey(readValue: _readProduct)@ProductRefConverter() EntityRef<Product>? get productId;@UserRefConverter() EntityRef<AppUser>? get requestedBy;@UserRefConverter() EntityRef<AppUser>? get handledBy;@UserRefConverter() EntityRef<AppUser>? get acknowledgedBy; int get currentAvailableStock; int get requestedQuantity; String? get reason; RestockStatus get status; String? get managerNote; DateTime? get resolvedAt; DateTime? get acknowledgedAt; int? get forwardedQuantity;@UserRefConverter() EntityRef<AppUser>? get forwardedBy; DateTime? get forwardedAt; int? get approvedQuantity;@UserRefConverter() EntityRef<AppUser>? get approvedBy; DateTime? get approvedAt; String? get ownerNote;@StringishConverter() String? get transferId; DateTime? get createdAt; DateTime? get updatedAt;
 /// Create a copy of RestockRequest
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -944,20 +944,20 @@ $RestockRequestCopyWith<RestockRequest> get copyWith => _$RestockRequestCopyWith
 @override
 bool operator ==(Object other) {
   final _this = this as RestockRequest;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is RestockRequest&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.storeId, _this.storeId) || other.storeId == _this.storeId)&&(identical(other.productId, _this.productId) || other.productId == _this.productId)&&(identical(other.requestedBy, _this.requestedBy) || other.requestedBy == _this.requestedBy)&&(identical(other.handledBy, _this.handledBy) || other.handledBy == _this.handledBy)&&(identical(other.acknowledgedBy, _this.acknowledgedBy) || other.acknowledgedBy == _this.acknowledgedBy)&&(identical(other.currentAvailableStock, _this.currentAvailableStock) || other.currentAvailableStock == _this.currentAvailableStock)&&(identical(other.requestedQuantity, _this.requestedQuantity) || other.requestedQuantity == _this.requestedQuantity)&&(identical(other.reason, _this.reason) || other.reason == _this.reason)&&(identical(other.status, _this.status) || other.status == _this.status)&&(identical(other.managerNote, _this.managerNote) || other.managerNote == _this.managerNote)&&(identical(other.resolvedAt, _this.resolvedAt) || other.resolvedAt == _this.resolvedAt)&&(identical(other.acknowledgedAt, _this.acknowledgedAt) || other.acknowledgedAt == _this.acknowledgedAt)&&(identical(other.createdAt, _this.createdAt) || other.createdAt == _this.createdAt)&&(identical(other.updatedAt, _this.updatedAt) || other.updatedAt == _this.updatedAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is RestockRequest&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.storeId, _this.storeId) || other.storeId == _this.storeId)&&(identical(other.productId, _this.productId) || other.productId == _this.productId)&&(identical(other.requestedBy, _this.requestedBy) || other.requestedBy == _this.requestedBy)&&(identical(other.handledBy, _this.handledBy) || other.handledBy == _this.handledBy)&&(identical(other.acknowledgedBy, _this.acknowledgedBy) || other.acknowledgedBy == _this.acknowledgedBy)&&(identical(other.currentAvailableStock, _this.currentAvailableStock) || other.currentAvailableStock == _this.currentAvailableStock)&&(identical(other.requestedQuantity, _this.requestedQuantity) || other.requestedQuantity == _this.requestedQuantity)&&(identical(other.reason, _this.reason) || other.reason == _this.reason)&&(identical(other.status, _this.status) || other.status == _this.status)&&(identical(other.managerNote, _this.managerNote) || other.managerNote == _this.managerNote)&&(identical(other.resolvedAt, _this.resolvedAt) || other.resolvedAt == _this.resolvedAt)&&(identical(other.acknowledgedAt, _this.acknowledgedAt) || other.acknowledgedAt == _this.acknowledgedAt)&&(identical(other.forwardedQuantity, _this.forwardedQuantity) || other.forwardedQuantity == _this.forwardedQuantity)&&(identical(other.forwardedBy, _this.forwardedBy) || other.forwardedBy == _this.forwardedBy)&&(identical(other.forwardedAt, _this.forwardedAt) || other.forwardedAt == _this.forwardedAt)&&(identical(other.approvedQuantity, _this.approvedQuantity) || other.approvedQuantity == _this.approvedQuantity)&&(identical(other.approvedBy, _this.approvedBy) || other.approvedBy == _this.approvedBy)&&(identical(other.approvedAt, _this.approvedAt) || other.approvedAt == _this.approvedAt)&&(identical(other.ownerNote, _this.ownerNote) || other.ownerNote == _this.ownerNote)&&(identical(other.transferId, _this.transferId) || other.transferId == _this.transferId)&&(identical(other.createdAt, _this.createdAt) || other.createdAt == _this.createdAt)&&(identical(other.updatedAt, _this.updatedAt) || other.updatedAt == _this.updatedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as RestockRequest;
-  return Object.hash(runtimeType,_this.id,_this.storeId,_this.productId,_this.requestedBy,_this.handledBy,_this.acknowledgedBy,_this.currentAvailableStock,_this.requestedQuantity,_this.reason,_this.status,_this.managerNote,_this.resolvedAt,_this.acknowledgedAt,_this.createdAt,_this.updatedAt);
+  return Object.hashAll([runtimeType,_this.id,_this.storeId,_this.productId,_this.requestedBy,_this.handledBy,_this.acknowledgedBy,_this.currentAvailableStock,_this.requestedQuantity,_this.reason,_this.status,_this.managerNote,_this.resolvedAt,_this.acknowledgedAt,_this.forwardedQuantity,_this.forwardedBy,_this.forwardedAt,_this.approvedQuantity,_this.approvedBy,_this.approvedAt,_this.ownerNote,_this.transferId,_this.createdAt,_this.updatedAt]);
 }
 
 @override
 String toString() {
   final _this = this as RestockRequest;
-  return 'RestockRequest(id: ${_this.id}, storeId: ${_this.storeId}, productId: ${_this.productId}, requestedBy: ${_this.requestedBy}, handledBy: ${_this.handledBy}, acknowledgedBy: ${_this.acknowledgedBy}, currentAvailableStock: ${_this.currentAvailableStock}, requestedQuantity: ${_this.requestedQuantity}, reason: ${_this.reason}, status: ${_this.status}, managerNote: ${_this.managerNote}, resolvedAt: ${_this.resolvedAt}, acknowledgedAt: ${_this.acknowledgedAt}, createdAt: ${_this.createdAt}, updatedAt: ${_this.updatedAt})';
+  return 'RestockRequest(id: ${_this.id}, storeId: ${_this.storeId}, productId: ${_this.productId}, requestedBy: ${_this.requestedBy}, handledBy: ${_this.handledBy}, acknowledgedBy: ${_this.acknowledgedBy}, currentAvailableStock: ${_this.currentAvailableStock}, requestedQuantity: ${_this.requestedQuantity}, reason: ${_this.reason}, status: ${_this.status}, managerNote: ${_this.managerNote}, resolvedAt: ${_this.resolvedAt}, acknowledgedAt: ${_this.acknowledgedAt}, forwardedQuantity: ${_this.forwardedQuantity}, forwardedBy: ${_this.forwardedBy}, forwardedAt: ${_this.forwardedAt}, approvedQuantity: ${_this.approvedQuantity}, approvedBy: ${_this.approvedBy}, approvedAt: ${_this.approvedAt}, ownerNote: ${_this.ownerNote}, transferId: ${_this.transferId}, createdAt: ${_this.createdAt}, updatedAt: ${_this.updatedAt})';
 }
 
 
@@ -968,7 +968,7 @@ abstract mixin class $RestockRequestCopyWith<$Res>  {
   factory $RestockRequestCopyWith(RestockRequest value, $Res Function(RestockRequest) _then) = _$RestockRequestCopyWithImpl;
 @useResult
 $Res call({
-@JsonKey(name: '_id') String id,@JsonKey(readValue: _readStore)@StoreRefConverter() EntityRef<Store>? storeId,@JsonKey(readValue: _readProduct)@ProductRefConverter() EntityRef<Product>? productId,@UserRefConverter() EntityRef<AppUser>? requestedBy,@UserRefConverter() EntityRef<AppUser>? handledBy,@UserRefConverter() EntityRef<AppUser>? acknowledgedBy, int currentAvailableStock, int requestedQuantity, String? reason, RestockStatus status, String? managerNote, DateTime? resolvedAt, DateTime? acknowledgedAt, DateTime? createdAt, DateTime? updatedAt
+@JsonKey(name: '_id') String id,@JsonKey(readValue: _readStore)@StoreRefConverter() EntityRef<Store>? storeId,@JsonKey(readValue: _readProduct)@ProductRefConverter() EntityRef<Product>? productId,@UserRefConverter() EntityRef<AppUser>? requestedBy,@UserRefConverter() EntityRef<AppUser>? handledBy,@UserRefConverter() EntityRef<AppUser>? acknowledgedBy, int currentAvailableStock, int requestedQuantity, String? reason, RestockStatus status, String? managerNote, DateTime? resolvedAt, DateTime? acknowledgedAt, int? forwardedQuantity,@UserRefConverter() EntityRef<AppUser>? forwardedBy, DateTime? forwardedAt, int? approvedQuantity,@UserRefConverter() EntityRef<AppUser>? approvedBy, DateTime? approvedAt, String? ownerNote,@StringishConverter() String? transferId, DateTime? createdAt, DateTime? updatedAt
 });
 
 
@@ -985,7 +985,7 @@ class _$RestockRequestCopyWithImpl<$Res>
 
 /// Create a copy of RestockRequest
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? storeId = freezed,Object? productId = freezed,Object? requestedBy = freezed,Object? handledBy = freezed,Object? acknowledgedBy = freezed,Object? currentAvailableStock = null,Object? requestedQuantity = null,Object? reason = freezed,Object? status = null,Object? managerNote = freezed,Object? resolvedAt = freezed,Object? acknowledgedAt = freezed,Object? createdAt = freezed,Object? updatedAt = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? storeId = freezed,Object? productId = freezed,Object? requestedBy = freezed,Object? handledBy = freezed,Object? acknowledgedBy = freezed,Object? currentAvailableStock = null,Object? requestedQuantity = null,Object? reason = freezed,Object? status = null,Object? managerNote = freezed,Object? resolvedAt = freezed,Object? acknowledgedAt = freezed,Object? forwardedQuantity = freezed,Object? forwardedBy = freezed,Object? forwardedAt = freezed,Object? approvedQuantity = freezed,Object? approvedBy = freezed,Object? approvedAt = freezed,Object? ownerNote = freezed,Object? transferId = freezed,Object? createdAt = freezed,Object? updatedAt = freezed,}) {
   return _then(RestockRequest(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,storeId: freezed == storeId ? _self.storeId : storeId // ignore: cast_nullable_to_non_nullable
@@ -1000,7 +1000,15 @@ as String?,status: null == status ? _self.status : status // ignore: cast_nullab
 as RestockStatus,managerNote: freezed == managerNote ? _self.managerNote : managerNote // ignore: cast_nullable_to_non_nullable
 as String?,resolvedAt: freezed == resolvedAt ? _self.resolvedAt : resolvedAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,acknowledgedAt: freezed == acknowledgedAt ? _self.acknowledgedAt : acknowledgedAt // ignore: cast_nullable_to_non_nullable
-as DateTime?,createdAt: freezed == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,forwardedQuantity: freezed == forwardedQuantity ? _self.forwardedQuantity : forwardedQuantity // ignore: cast_nullable_to_non_nullable
+as int?,forwardedBy: freezed == forwardedBy ? _self.forwardedBy : forwardedBy // ignore: cast_nullable_to_non_nullable
+as EntityRef<AppUser>?,forwardedAt: freezed == forwardedAt ? _self.forwardedAt : forwardedAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,approvedQuantity: freezed == approvedQuantity ? _self.approvedQuantity : approvedQuantity // ignore: cast_nullable_to_non_nullable
+as int?,approvedBy: freezed == approvedBy ? _self.approvedBy : approvedBy // ignore: cast_nullable_to_non_nullable
+as EntityRef<AppUser>?,approvedAt: freezed == approvedAt ? _self.approvedAt : approvedAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,ownerNote: freezed == ownerNote ? _self.ownerNote : ownerNote // ignore: cast_nullable_to_non_nullable
+as String?,transferId: freezed == transferId ? _self.transferId : transferId // ignore: cast_nullable_to_non_nullable
+as String?,createdAt: freezed == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,updatedAt: freezed == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,
   ));
@@ -1087,10 +1095,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(name: '_id')  String id, @JsonKey(readValue: _readStore)@StoreRefConverter()  EntityRef<Store>? storeId, @JsonKey(readValue: _readProduct)@ProductRefConverter()  EntityRef<Product>? productId, @UserRefConverter()  EntityRef<AppUser>? requestedBy, @UserRefConverter()  EntityRef<AppUser>? handledBy, @UserRefConverter()  EntityRef<AppUser>? acknowledgedBy,  int currentAvailableStock,  int requestedQuantity,  String? reason,  RestockStatus status,  String? managerNote,  DateTime? resolvedAt,  DateTime? acknowledgedAt,  DateTime? createdAt,  DateTime? updatedAt)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(name: '_id')  String id, @JsonKey(readValue: _readStore)@StoreRefConverter()  EntityRef<Store>? storeId, @JsonKey(readValue: _readProduct)@ProductRefConverter()  EntityRef<Product>? productId, @UserRefConverter()  EntityRef<AppUser>? requestedBy, @UserRefConverter()  EntityRef<AppUser>? handledBy, @UserRefConverter()  EntityRef<AppUser>? acknowledgedBy,  int currentAvailableStock,  int requestedQuantity,  String? reason,  RestockStatus status,  String? managerNote,  DateTime? resolvedAt,  DateTime? acknowledgedAt,  int? forwardedQuantity, @UserRefConverter()  EntityRef<AppUser>? forwardedBy,  DateTime? forwardedAt,  int? approvedQuantity, @UserRefConverter()  EntityRef<AppUser>? approvedBy,  DateTime? approvedAt,  String? ownerNote, @StringishConverter()  String? transferId,  DateTime? createdAt,  DateTime? updatedAt)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _RestockRequest() when $default != null:
-return $default(_that.id,_that.storeId,_that.productId,_that.requestedBy,_that.handledBy,_that.acknowledgedBy,_that.currentAvailableStock,_that.requestedQuantity,_that.reason,_that.status,_that.managerNote,_that.resolvedAt,_that.acknowledgedAt,_that.createdAt,_that.updatedAt);case _:
+return $default(_that.id,_that.storeId,_that.productId,_that.requestedBy,_that.handledBy,_that.acknowledgedBy,_that.currentAvailableStock,_that.requestedQuantity,_that.reason,_that.status,_that.managerNote,_that.resolvedAt,_that.acknowledgedAt,_that.forwardedQuantity,_that.forwardedBy,_that.forwardedAt,_that.approvedQuantity,_that.approvedBy,_that.approvedAt,_that.ownerNote,_that.transferId,_that.createdAt,_that.updatedAt);case _:
   return orElse();
 
 }
@@ -1108,10 +1116,10 @@ return $default(_that.id,_that.storeId,_that.productId,_that.requestedBy,_that.h
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(name: '_id')  String id, @JsonKey(readValue: _readStore)@StoreRefConverter()  EntityRef<Store>? storeId, @JsonKey(readValue: _readProduct)@ProductRefConverter()  EntityRef<Product>? productId, @UserRefConverter()  EntityRef<AppUser>? requestedBy, @UserRefConverter()  EntityRef<AppUser>? handledBy, @UserRefConverter()  EntityRef<AppUser>? acknowledgedBy,  int currentAvailableStock,  int requestedQuantity,  String? reason,  RestockStatus status,  String? managerNote,  DateTime? resolvedAt,  DateTime? acknowledgedAt,  DateTime? createdAt,  DateTime? updatedAt)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(name: '_id')  String id, @JsonKey(readValue: _readStore)@StoreRefConverter()  EntityRef<Store>? storeId, @JsonKey(readValue: _readProduct)@ProductRefConverter()  EntityRef<Product>? productId, @UserRefConverter()  EntityRef<AppUser>? requestedBy, @UserRefConverter()  EntityRef<AppUser>? handledBy, @UserRefConverter()  EntityRef<AppUser>? acknowledgedBy,  int currentAvailableStock,  int requestedQuantity,  String? reason,  RestockStatus status,  String? managerNote,  DateTime? resolvedAt,  DateTime? acknowledgedAt,  int? forwardedQuantity, @UserRefConverter()  EntityRef<AppUser>? forwardedBy,  DateTime? forwardedAt,  int? approvedQuantity, @UserRefConverter()  EntityRef<AppUser>? approvedBy,  DateTime? approvedAt,  String? ownerNote, @StringishConverter()  String? transferId,  DateTime? createdAt,  DateTime? updatedAt)  $default,) {final _that = this;
 switch (_that) {
 case _RestockRequest():
-return $default(_that.id,_that.storeId,_that.productId,_that.requestedBy,_that.handledBy,_that.acknowledgedBy,_that.currentAvailableStock,_that.requestedQuantity,_that.reason,_that.status,_that.managerNote,_that.resolvedAt,_that.acknowledgedAt,_that.createdAt,_that.updatedAt);case _:
+return $default(_that.id,_that.storeId,_that.productId,_that.requestedBy,_that.handledBy,_that.acknowledgedBy,_that.currentAvailableStock,_that.requestedQuantity,_that.reason,_that.status,_that.managerNote,_that.resolvedAt,_that.acknowledgedAt,_that.forwardedQuantity,_that.forwardedBy,_that.forwardedAt,_that.approvedQuantity,_that.approvedBy,_that.approvedAt,_that.ownerNote,_that.transferId,_that.createdAt,_that.updatedAt);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -1128,10 +1136,10 @@ return $default(_that.id,_that.storeId,_that.productId,_that.requestedBy,_that.h
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(name: '_id')  String id, @JsonKey(readValue: _readStore)@StoreRefConverter()  EntityRef<Store>? storeId, @JsonKey(readValue: _readProduct)@ProductRefConverter()  EntityRef<Product>? productId, @UserRefConverter()  EntityRef<AppUser>? requestedBy, @UserRefConverter()  EntityRef<AppUser>? handledBy, @UserRefConverter()  EntityRef<AppUser>? acknowledgedBy,  int currentAvailableStock,  int requestedQuantity,  String? reason,  RestockStatus status,  String? managerNote,  DateTime? resolvedAt,  DateTime? acknowledgedAt,  DateTime? createdAt,  DateTime? updatedAt)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(name: '_id')  String id, @JsonKey(readValue: _readStore)@StoreRefConverter()  EntityRef<Store>? storeId, @JsonKey(readValue: _readProduct)@ProductRefConverter()  EntityRef<Product>? productId, @UserRefConverter()  EntityRef<AppUser>? requestedBy, @UserRefConverter()  EntityRef<AppUser>? handledBy, @UserRefConverter()  EntityRef<AppUser>? acknowledgedBy,  int currentAvailableStock,  int requestedQuantity,  String? reason,  RestockStatus status,  String? managerNote,  DateTime? resolvedAt,  DateTime? acknowledgedAt,  int? forwardedQuantity, @UserRefConverter()  EntityRef<AppUser>? forwardedBy,  DateTime? forwardedAt,  int? approvedQuantity, @UserRefConverter()  EntityRef<AppUser>? approvedBy,  DateTime? approvedAt,  String? ownerNote, @StringishConverter()  String? transferId,  DateTime? createdAt,  DateTime? updatedAt)?  $default,) {final _that = this;
 switch (_that) {
 case _RestockRequest() when $default != null:
-return $default(_that.id,_that.storeId,_that.productId,_that.requestedBy,_that.handledBy,_that.acknowledgedBy,_that.currentAvailableStock,_that.requestedQuantity,_that.reason,_that.status,_that.managerNote,_that.resolvedAt,_that.acknowledgedAt,_that.createdAt,_that.updatedAt);case _:
+return $default(_that.id,_that.storeId,_that.productId,_that.requestedBy,_that.handledBy,_that.acknowledgedBy,_that.currentAvailableStock,_that.requestedQuantity,_that.reason,_that.status,_that.managerNote,_that.resolvedAt,_that.acknowledgedAt,_that.forwardedQuantity,_that.forwardedBy,_that.forwardedAt,_that.approvedQuantity,_that.approvedBy,_that.approvedAt,_that.ownerNote,_that.transferId,_that.createdAt,_that.updatedAt);case _:
   return null;
 
 }
@@ -1143,7 +1151,7 @@ return $default(_that.id,_that.storeId,_that.productId,_that.requestedBy,_that.h
 @JsonSerializable()
 
 class _RestockRequest implements RestockRequest {
-  const _RestockRequest({@JsonKey(name: '_id') required this.id, @JsonKey(readValue: _readStore)@StoreRefConverter() this.storeId, @JsonKey(readValue: _readProduct)@ProductRefConverter() this.productId, @UserRefConverter() this.requestedBy, @UserRefConverter() this.handledBy, @UserRefConverter() this.acknowledgedBy, this.currentAvailableStock = 0, this.requestedQuantity = 0, this.reason, this.status = RestockStatus.open, this.managerNote, this.resolvedAt, this.acknowledgedAt, this.createdAt, this.updatedAt});
+  const _RestockRequest({@JsonKey(name: '_id') required this.id, @JsonKey(readValue: _readStore)@StoreRefConverter() this.storeId, @JsonKey(readValue: _readProduct)@ProductRefConverter() this.productId, @UserRefConverter() this.requestedBy, @UserRefConverter() this.handledBy, @UserRefConverter() this.acknowledgedBy, this.currentAvailableStock = 0, this.requestedQuantity = 0, this.reason, this.status = RestockStatus.open, this.managerNote, this.resolvedAt, this.acknowledgedAt, this.forwardedQuantity, @UserRefConverter() this.forwardedBy, this.forwardedAt, this.approvedQuantity, @UserRefConverter() this.approvedBy, this.approvedAt, this.ownerNote, @StringishConverter() this.transferId, this.createdAt, this.updatedAt});
   factory _RestockRequest.fromJson(Map<String, dynamic> json) => _$RestockRequestFromJson(json);
 
 @override@JsonKey(name: '_id') final  String id;
@@ -1159,6 +1167,14 @@ class _RestockRequest implements RestockRequest {
 @override final  String? managerNote;
 @override final  DateTime? resolvedAt;
 @override final  DateTime? acknowledgedAt;
+@override final  int? forwardedQuantity;
+@override@UserRefConverter() final  EntityRef<AppUser>? forwardedBy;
+@override final  DateTime? forwardedAt;
+@override final  int? approvedQuantity;
+@override@UserRefConverter() final  EntityRef<AppUser>? approvedBy;
+@override final  DateTime? approvedAt;
+@override final  String? ownerNote;
+@override@StringishConverter() final  String? transferId;
 @override final  DateTime? createdAt;
 @override final  DateTime? updatedAt;
 
@@ -1175,18 +1191,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _RestockRequest&&(identical(other.id, id) || other.id == id)&&(identical(other.storeId, storeId) || other.storeId == storeId)&&(identical(other.productId, productId) || other.productId == productId)&&(identical(other.requestedBy, requestedBy) || other.requestedBy == requestedBy)&&(identical(other.handledBy, handledBy) || other.handledBy == handledBy)&&(identical(other.acknowledgedBy, acknowledgedBy) || other.acknowledgedBy == acknowledgedBy)&&(identical(other.currentAvailableStock, currentAvailableStock) || other.currentAvailableStock == currentAvailableStock)&&(identical(other.requestedQuantity, requestedQuantity) || other.requestedQuantity == requestedQuantity)&&(identical(other.reason, reason) || other.reason == reason)&&(identical(other.status, status) || other.status == status)&&(identical(other.managerNote, managerNote) || other.managerNote == managerNote)&&(identical(other.resolvedAt, resolvedAt) || other.resolvedAt == resolvedAt)&&(identical(other.acknowledgedAt, acknowledgedAt) || other.acknowledgedAt == acknowledgedAt)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _RestockRequest&&(identical(other.id, id) || other.id == id)&&(identical(other.storeId, storeId) || other.storeId == storeId)&&(identical(other.productId, productId) || other.productId == productId)&&(identical(other.requestedBy, requestedBy) || other.requestedBy == requestedBy)&&(identical(other.handledBy, handledBy) || other.handledBy == handledBy)&&(identical(other.acknowledgedBy, acknowledgedBy) || other.acknowledgedBy == acknowledgedBy)&&(identical(other.currentAvailableStock, currentAvailableStock) || other.currentAvailableStock == currentAvailableStock)&&(identical(other.requestedQuantity, requestedQuantity) || other.requestedQuantity == requestedQuantity)&&(identical(other.reason, reason) || other.reason == reason)&&(identical(other.status, status) || other.status == status)&&(identical(other.managerNote, managerNote) || other.managerNote == managerNote)&&(identical(other.resolvedAt, resolvedAt) || other.resolvedAt == resolvedAt)&&(identical(other.acknowledgedAt, acknowledgedAt) || other.acknowledgedAt == acknowledgedAt)&&(identical(other.forwardedQuantity, forwardedQuantity) || other.forwardedQuantity == forwardedQuantity)&&(identical(other.forwardedBy, forwardedBy) || other.forwardedBy == forwardedBy)&&(identical(other.forwardedAt, forwardedAt) || other.forwardedAt == forwardedAt)&&(identical(other.approvedQuantity, approvedQuantity) || other.approvedQuantity == approvedQuantity)&&(identical(other.approvedBy, approvedBy) || other.approvedBy == approvedBy)&&(identical(other.approvedAt, approvedAt) || other.approvedAt == approvedAt)&&(identical(other.ownerNote, ownerNote) || other.ownerNote == ownerNote)&&(identical(other.transferId, transferId) || other.transferId == transferId)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,id,storeId,productId,requestedBy,handledBy,acknowledgedBy,currentAvailableStock,requestedQuantity,reason,status,managerNote,resolvedAt,acknowledgedAt,createdAt,updatedAt);
+    return Object.hashAll([runtimeType,id,storeId,productId,requestedBy,handledBy,acknowledgedBy,currentAvailableStock,requestedQuantity,reason,status,managerNote,resolvedAt,acknowledgedAt,forwardedQuantity,forwardedBy,forwardedAt,approvedQuantity,approvedBy,approvedAt,ownerNote,transferId,createdAt,updatedAt]);
 }
 
 @override
 String toString() {
-    return 'RestockRequest(id: $id, storeId: $storeId, productId: $productId, requestedBy: $requestedBy, handledBy: $handledBy, acknowledgedBy: $acknowledgedBy, currentAvailableStock: $currentAvailableStock, requestedQuantity: $requestedQuantity, reason: $reason, status: $status, managerNote: $managerNote, resolvedAt: $resolvedAt, acknowledgedAt: $acknowledgedAt, createdAt: $createdAt, updatedAt: $updatedAt)';
+    return 'RestockRequest(id: $id, storeId: $storeId, productId: $productId, requestedBy: $requestedBy, handledBy: $handledBy, acknowledgedBy: $acknowledgedBy, currentAvailableStock: $currentAvailableStock, requestedQuantity: $requestedQuantity, reason: $reason, status: $status, managerNote: $managerNote, resolvedAt: $resolvedAt, acknowledgedAt: $acknowledgedAt, forwardedQuantity: $forwardedQuantity, forwardedBy: $forwardedBy, forwardedAt: $forwardedAt, approvedQuantity: $approvedQuantity, approvedBy: $approvedBy, approvedAt: $approvedAt, ownerNote: $ownerNote, transferId: $transferId, createdAt: $createdAt, updatedAt: $updatedAt)';
 }
 
 
@@ -1197,7 +1213,7 @@ abstract mixin class _$RestockRequestCopyWith<$Res> implements $RestockRequestCo
   factory _$RestockRequestCopyWith(_RestockRequest value, $Res Function(_RestockRequest) _then) = __$RestockRequestCopyWithImpl;
 @override @useResult
 $Res call({
-@JsonKey(name: '_id') String id,@JsonKey(readValue: _readStore)@StoreRefConverter() EntityRef<Store>? storeId,@JsonKey(readValue: _readProduct)@ProductRefConverter() EntityRef<Product>? productId,@UserRefConverter() EntityRef<AppUser>? requestedBy,@UserRefConverter() EntityRef<AppUser>? handledBy,@UserRefConverter() EntityRef<AppUser>? acknowledgedBy, int currentAvailableStock, int requestedQuantity, String? reason, RestockStatus status, String? managerNote, DateTime? resolvedAt, DateTime? acknowledgedAt, DateTime? createdAt, DateTime? updatedAt
+@JsonKey(name: '_id') String id,@JsonKey(readValue: _readStore)@StoreRefConverter() EntityRef<Store>? storeId,@JsonKey(readValue: _readProduct)@ProductRefConverter() EntityRef<Product>? productId,@UserRefConverter() EntityRef<AppUser>? requestedBy,@UserRefConverter() EntityRef<AppUser>? handledBy,@UserRefConverter() EntityRef<AppUser>? acknowledgedBy, int currentAvailableStock, int requestedQuantity, String? reason, RestockStatus status, String? managerNote, DateTime? resolvedAt, DateTime? acknowledgedAt, int? forwardedQuantity,@UserRefConverter() EntityRef<AppUser>? forwardedBy, DateTime? forwardedAt, int? approvedQuantity,@UserRefConverter() EntityRef<AppUser>? approvedBy, DateTime? approvedAt, String? ownerNote,@StringishConverter() String? transferId, DateTime? createdAt, DateTime? updatedAt
 });
 
 
@@ -1214,7 +1230,7 @@ class __$RestockRequestCopyWithImpl<$Res>
 
 /// Create a copy of RestockRequest
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? storeId = freezed,Object? productId = freezed,Object? requestedBy = freezed,Object? handledBy = freezed,Object? acknowledgedBy = freezed,Object? currentAvailableStock = null,Object? requestedQuantity = null,Object? reason = freezed,Object? status = null,Object? managerNote = freezed,Object? resolvedAt = freezed,Object? acknowledgedAt = freezed,Object? createdAt = freezed,Object? updatedAt = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? storeId = freezed,Object? productId = freezed,Object? requestedBy = freezed,Object? handledBy = freezed,Object? acknowledgedBy = freezed,Object? currentAvailableStock = null,Object? requestedQuantity = null,Object? reason = freezed,Object? status = null,Object? managerNote = freezed,Object? resolvedAt = freezed,Object? acknowledgedAt = freezed,Object? forwardedQuantity = freezed,Object? forwardedBy = freezed,Object? forwardedAt = freezed,Object? approvedQuantity = freezed,Object? approvedBy = freezed,Object? approvedAt = freezed,Object? ownerNote = freezed,Object? transferId = freezed,Object? createdAt = freezed,Object? updatedAt = freezed,}) {
   return _then(_RestockRequest(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,storeId: freezed == storeId ? _self.storeId : storeId // ignore: cast_nullable_to_non_nullable
@@ -1229,7 +1245,15 @@ as String?,status: null == status ? _self.status : status // ignore: cast_nullab
 as RestockStatus,managerNote: freezed == managerNote ? _self.managerNote : managerNote // ignore: cast_nullable_to_non_nullable
 as String?,resolvedAt: freezed == resolvedAt ? _self.resolvedAt : resolvedAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,acknowledgedAt: freezed == acknowledgedAt ? _self.acknowledgedAt : acknowledgedAt // ignore: cast_nullable_to_non_nullable
-as DateTime?,createdAt: freezed == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,forwardedQuantity: freezed == forwardedQuantity ? _self.forwardedQuantity : forwardedQuantity // ignore: cast_nullable_to_non_nullable
+as int?,forwardedBy: freezed == forwardedBy ? _self.forwardedBy : forwardedBy // ignore: cast_nullable_to_non_nullable
+as EntityRef<AppUser>?,forwardedAt: freezed == forwardedAt ? _self.forwardedAt : forwardedAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,approvedQuantity: freezed == approvedQuantity ? _self.approvedQuantity : approvedQuantity // ignore: cast_nullable_to_non_nullable
+as int?,approvedBy: freezed == approvedBy ? _self.approvedBy : approvedBy // ignore: cast_nullable_to_non_nullable
+as EntityRef<AppUser>?,approvedAt: freezed == approvedAt ? _self.approvedAt : approvedAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,ownerNote: freezed == ownerNote ? _self.ownerNote : ownerNote // ignore: cast_nullable_to_non_nullable
+as String?,transferId: freezed == transferId ? _self.transferId : transferId // ignore: cast_nullable_to_non_nullable
+as String?,createdAt: freezed == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,updatedAt: freezed == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,
   ));
@@ -2409,7 +2433,7 @@ as int,
 /// @nodoc
 mixin _$StockTransfer {
 
-@JsonKey(name: '_id') String get id;@StoreRefConverter() EntityRef<Store>? get fromStoreId;@StoreRefConverter() EntityRef<Store>? get toStoreId; List<TransferItem> get items; TransferStatus get status;@UserRefConverter() EntityRef<AppUser>? get createdBy;@UserRefConverter() EntityRef<AppUser>? get confirmedBy; DateTime? get createdAt; DateTime? get updatedAt;
+@JsonKey(name: '_id') String get id;@StoreRefConverter() EntityRef<Store>? get fromStoreId;@StoreRefConverter() EntityRef<Store>? get toStoreId; List<TransferItem> get items; TransferStatus get status;@UserRefConverter() EntityRef<AppUser>? get createdBy;@UserRefConverter() EntityRef<AppUser>? get confirmedBy; String? get note;@StringishConverter() String? get restockRequestId; DateTime? get createdAt; DateTime? get updatedAt;
 /// Create a copy of StockTransfer
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -2423,20 +2447,20 @@ $StockTransferCopyWith<StockTransfer> get copyWith => _$StockTransferCopyWithImp
 @override
 bool operator ==(Object other) {
   final _this = this as StockTransfer;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is StockTransfer&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.fromStoreId, _this.fromStoreId) || other.fromStoreId == _this.fromStoreId)&&(identical(other.toStoreId, _this.toStoreId) || other.toStoreId == _this.toStoreId)&&const DeepCollectionEquality().equals(other.items, _this.items)&&(identical(other.status, _this.status) || other.status == _this.status)&&(identical(other.createdBy, _this.createdBy) || other.createdBy == _this.createdBy)&&(identical(other.confirmedBy, _this.confirmedBy) || other.confirmedBy == _this.confirmedBy)&&(identical(other.createdAt, _this.createdAt) || other.createdAt == _this.createdAt)&&(identical(other.updatedAt, _this.updatedAt) || other.updatedAt == _this.updatedAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is StockTransfer&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.fromStoreId, _this.fromStoreId) || other.fromStoreId == _this.fromStoreId)&&(identical(other.toStoreId, _this.toStoreId) || other.toStoreId == _this.toStoreId)&&const DeepCollectionEquality().equals(other.items, _this.items)&&(identical(other.status, _this.status) || other.status == _this.status)&&(identical(other.createdBy, _this.createdBy) || other.createdBy == _this.createdBy)&&(identical(other.confirmedBy, _this.confirmedBy) || other.confirmedBy == _this.confirmedBy)&&(identical(other.note, _this.note) || other.note == _this.note)&&(identical(other.restockRequestId, _this.restockRequestId) || other.restockRequestId == _this.restockRequestId)&&(identical(other.createdAt, _this.createdAt) || other.createdAt == _this.createdAt)&&(identical(other.updatedAt, _this.updatedAt) || other.updatedAt == _this.updatedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as StockTransfer;
-  return Object.hash(runtimeType,_this.id,_this.fromStoreId,_this.toStoreId,const DeepCollectionEquality().hash(_this.items),_this.status,_this.createdBy,_this.confirmedBy,_this.createdAt,_this.updatedAt);
+  return Object.hash(runtimeType,_this.id,_this.fromStoreId,_this.toStoreId,const DeepCollectionEquality().hash(_this.items),_this.status,_this.createdBy,_this.confirmedBy,_this.note,_this.restockRequestId,_this.createdAt,_this.updatedAt);
 }
 
 @override
 String toString() {
   final _this = this as StockTransfer;
-  return 'StockTransfer(id: ${_this.id}, fromStoreId: ${_this.fromStoreId}, toStoreId: ${_this.toStoreId}, items: ${_this.items}, status: ${_this.status}, createdBy: ${_this.createdBy}, confirmedBy: ${_this.confirmedBy}, createdAt: ${_this.createdAt}, updatedAt: ${_this.updatedAt})';
+  return 'StockTransfer(id: ${_this.id}, fromStoreId: ${_this.fromStoreId}, toStoreId: ${_this.toStoreId}, items: ${_this.items}, status: ${_this.status}, createdBy: ${_this.createdBy}, confirmedBy: ${_this.confirmedBy}, note: ${_this.note}, restockRequestId: ${_this.restockRequestId}, createdAt: ${_this.createdAt}, updatedAt: ${_this.updatedAt})';
 }
 
 
@@ -2447,7 +2471,7 @@ abstract mixin class $StockTransferCopyWith<$Res>  {
   factory $StockTransferCopyWith(StockTransfer value, $Res Function(StockTransfer) _then) = _$StockTransferCopyWithImpl;
 @useResult
 $Res call({
-@JsonKey(name: '_id') String id,@StoreRefConverter() EntityRef<Store>? fromStoreId,@StoreRefConverter() EntityRef<Store>? toStoreId, List<TransferItem> items, TransferStatus status,@UserRefConverter() EntityRef<AppUser>? createdBy,@UserRefConverter() EntityRef<AppUser>? confirmedBy, DateTime? createdAt, DateTime? updatedAt
+@JsonKey(name: '_id') String id,@StoreRefConverter() EntityRef<Store>? fromStoreId,@StoreRefConverter() EntityRef<Store>? toStoreId, List<TransferItem> items, TransferStatus status,@UserRefConverter() EntityRef<AppUser>? createdBy,@UserRefConverter() EntityRef<AppUser>? confirmedBy, String? note,@StringishConverter() String? restockRequestId, DateTime? createdAt, DateTime? updatedAt
 });
 
 
@@ -2464,7 +2488,7 @@ class _$StockTransferCopyWithImpl<$Res>
 
 /// Create a copy of StockTransfer
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? fromStoreId = freezed,Object? toStoreId = freezed,Object? items = null,Object? status = null,Object? createdBy = freezed,Object? confirmedBy = freezed,Object? createdAt = freezed,Object? updatedAt = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? fromStoreId = freezed,Object? toStoreId = freezed,Object? items = null,Object? status = null,Object? createdBy = freezed,Object? confirmedBy = freezed,Object? note = freezed,Object? restockRequestId = freezed,Object? createdAt = freezed,Object? updatedAt = freezed,}) {
   return _then(StockTransfer(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,fromStoreId: freezed == fromStoreId ? _self.fromStoreId : fromStoreId // ignore: cast_nullable_to_non_nullable
@@ -2473,7 +2497,9 @@ as EntityRef<Store>?,items: null == items ? _self.items : items // ignore: cast_
 as List<TransferItem>,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
 as TransferStatus,createdBy: freezed == createdBy ? _self.createdBy : createdBy // ignore: cast_nullable_to_non_nullable
 as EntityRef<AppUser>?,confirmedBy: freezed == confirmedBy ? _self.confirmedBy : confirmedBy // ignore: cast_nullable_to_non_nullable
-as EntityRef<AppUser>?,createdAt: freezed == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
+as EntityRef<AppUser>?,note: freezed == note ? _self.note : note // ignore: cast_nullable_to_non_nullable
+as String?,restockRequestId: freezed == restockRequestId ? _self.restockRequestId : restockRequestId // ignore: cast_nullable_to_non_nullable
+as String?,createdAt: freezed == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,updatedAt: freezed == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,
   ));
@@ -2560,10 +2586,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(name: '_id')  String id, @StoreRefConverter()  EntityRef<Store>? fromStoreId, @StoreRefConverter()  EntityRef<Store>? toStoreId,  List<TransferItem> items,  TransferStatus status, @UserRefConverter()  EntityRef<AppUser>? createdBy, @UserRefConverter()  EntityRef<AppUser>? confirmedBy,  DateTime? createdAt,  DateTime? updatedAt)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(name: '_id')  String id, @StoreRefConverter()  EntityRef<Store>? fromStoreId, @StoreRefConverter()  EntityRef<Store>? toStoreId,  List<TransferItem> items,  TransferStatus status, @UserRefConverter()  EntityRef<AppUser>? createdBy, @UserRefConverter()  EntityRef<AppUser>? confirmedBy,  String? note, @StringishConverter()  String? restockRequestId,  DateTime? createdAt,  DateTime? updatedAt)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _StockTransfer() when $default != null:
-return $default(_that.id,_that.fromStoreId,_that.toStoreId,_that.items,_that.status,_that.createdBy,_that.confirmedBy,_that.createdAt,_that.updatedAt);case _:
+return $default(_that.id,_that.fromStoreId,_that.toStoreId,_that.items,_that.status,_that.createdBy,_that.confirmedBy,_that.note,_that.restockRequestId,_that.createdAt,_that.updatedAt);case _:
   return orElse();
 
 }
@@ -2581,10 +2607,10 @@ return $default(_that.id,_that.fromStoreId,_that.toStoreId,_that.items,_that.sta
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(name: '_id')  String id, @StoreRefConverter()  EntityRef<Store>? fromStoreId, @StoreRefConverter()  EntityRef<Store>? toStoreId,  List<TransferItem> items,  TransferStatus status, @UserRefConverter()  EntityRef<AppUser>? createdBy, @UserRefConverter()  EntityRef<AppUser>? confirmedBy,  DateTime? createdAt,  DateTime? updatedAt)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(name: '_id')  String id, @StoreRefConverter()  EntityRef<Store>? fromStoreId, @StoreRefConverter()  EntityRef<Store>? toStoreId,  List<TransferItem> items,  TransferStatus status, @UserRefConverter()  EntityRef<AppUser>? createdBy, @UserRefConverter()  EntityRef<AppUser>? confirmedBy,  String? note, @StringishConverter()  String? restockRequestId,  DateTime? createdAt,  DateTime? updatedAt)  $default,) {final _that = this;
 switch (_that) {
 case _StockTransfer():
-return $default(_that.id,_that.fromStoreId,_that.toStoreId,_that.items,_that.status,_that.createdBy,_that.confirmedBy,_that.createdAt,_that.updatedAt);case _:
+return $default(_that.id,_that.fromStoreId,_that.toStoreId,_that.items,_that.status,_that.createdBy,_that.confirmedBy,_that.note,_that.restockRequestId,_that.createdAt,_that.updatedAt);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -2601,10 +2627,10 @@ return $default(_that.id,_that.fromStoreId,_that.toStoreId,_that.items,_that.sta
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(name: '_id')  String id, @StoreRefConverter()  EntityRef<Store>? fromStoreId, @StoreRefConverter()  EntityRef<Store>? toStoreId,  List<TransferItem> items,  TransferStatus status, @UserRefConverter()  EntityRef<AppUser>? createdBy, @UserRefConverter()  EntityRef<AppUser>? confirmedBy,  DateTime? createdAt,  DateTime? updatedAt)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(name: '_id')  String id, @StoreRefConverter()  EntityRef<Store>? fromStoreId, @StoreRefConverter()  EntityRef<Store>? toStoreId,  List<TransferItem> items,  TransferStatus status, @UserRefConverter()  EntityRef<AppUser>? createdBy, @UserRefConverter()  EntityRef<AppUser>? confirmedBy,  String? note, @StringishConverter()  String? restockRequestId,  DateTime? createdAt,  DateTime? updatedAt)?  $default,) {final _that = this;
 switch (_that) {
 case _StockTransfer() when $default != null:
-return $default(_that.id,_that.fromStoreId,_that.toStoreId,_that.items,_that.status,_that.createdBy,_that.confirmedBy,_that.createdAt,_that.updatedAt);case _:
+return $default(_that.id,_that.fromStoreId,_that.toStoreId,_that.items,_that.status,_that.createdBy,_that.confirmedBy,_that.note,_that.restockRequestId,_that.createdAt,_that.updatedAt);case _:
   return null;
 
 }
@@ -2616,7 +2642,7 @@ return $default(_that.id,_that.fromStoreId,_that.toStoreId,_that.items,_that.sta
 @JsonSerializable()
 
 class _StockTransfer extends StockTransfer {
-  const _StockTransfer({@JsonKey(name: '_id') required this.id, @StoreRefConverter() this.fromStoreId, @StoreRefConverter() this.toStoreId,  List<TransferItem> items = const <TransferItem>[], this.status = TransferStatus.pending, @UserRefConverter() this.createdBy, @UserRefConverter() this.confirmedBy, this.createdAt, this.updatedAt}): _items = items,super._();
+  const _StockTransfer({@JsonKey(name: '_id') required this.id, @StoreRefConverter() this.fromStoreId, @StoreRefConverter() this.toStoreId,  List<TransferItem> items = const <TransferItem>[], this.status = TransferStatus.pending, @UserRefConverter() this.createdBy, @UserRefConverter() this.confirmedBy, this.note, @StringishConverter() this.restockRequestId, this.createdAt, this.updatedAt}): _items = items,super._();
   factory _StockTransfer.fromJson(Map<String, dynamic> json) => _$StockTransferFromJson(json);
 
 @override@JsonKey(name: '_id') final  String id;
@@ -2632,6 +2658,8 @@ class _StockTransfer extends StockTransfer {
 @override@JsonKey() final  TransferStatus status;
 @override@UserRefConverter() final  EntityRef<AppUser>? createdBy;
 @override@UserRefConverter() final  EntityRef<AppUser>? confirmedBy;
+@override final  String? note;
+@override@StringishConverter() final  String? restockRequestId;
 @override final  DateTime? createdAt;
 @override final  DateTime? updatedAt;
 
@@ -2648,18 +2676,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _StockTransfer&&(identical(other.id, id) || other.id == id)&&(identical(other.fromStoreId, fromStoreId) || other.fromStoreId == fromStoreId)&&(identical(other.toStoreId, toStoreId) || other.toStoreId == toStoreId)&&const DeepCollectionEquality().equals(other.items, _items)&&(identical(other.status, status) || other.status == status)&&(identical(other.createdBy, createdBy) || other.createdBy == createdBy)&&(identical(other.confirmedBy, confirmedBy) || other.confirmedBy == confirmedBy)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _StockTransfer&&(identical(other.id, id) || other.id == id)&&(identical(other.fromStoreId, fromStoreId) || other.fromStoreId == fromStoreId)&&(identical(other.toStoreId, toStoreId) || other.toStoreId == toStoreId)&&const DeepCollectionEquality().equals(other.items, _items)&&(identical(other.status, status) || other.status == status)&&(identical(other.createdBy, createdBy) || other.createdBy == createdBy)&&(identical(other.confirmedBy, confirmedBy) || other.confirmedBy == confirmedBy)&&(identical(other.note, note) || other.note == note)&&(identical(other.restockRequestId, restockRequestId) || other.restockRequestId == restockRequestId)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,id,fromStoreId,toStoreId,const DeepCollectionEquality().hash(_items),status,createdBy,confirmedBy,createdAt,updatedAt);
+    return Object.hash(runtimeType,id,fromStoreId,toStoreId,const DeepCollectionEquality().hash(_items),status,createdBy,confirmedBy,note,restockRequestId,createdAt,updatedAt);
 }
 
 @override
 String toString() {
-    return 'StockTransfer(id: $id, fromStoreId: $fromStoreId, toStoreId: $toStoreId, items: $items, status: $status, createdBy: $createdBy, confirmedBy: $confirmedBy, createdAt: $createdAt, updatedAt: $updatedAt)';
+    return 'StockTransfer(id: $id, fromStoreId: $fromStoreId, toStoreId: $toStoreId, items: $items, status: $status, createdBy: $createdBy, confirmedBy: $confirmedBy, note: $note, restockRequestId: $restockRequestId, createdAt: $createdAt, updatedAt: $updatedAt)';
 }
 
 
@@ -2670,7 +2698,7 @@ abstract mixin class _$StockTransferCopyWith<$Res> implements $StockTransferCopy
   factory _$StockTransferCopyWith(_StockTransfer value, $Res Function(_StockTransfer) _then) = __$StockTransferCopyWithImpl;
 @override @useResult
 $Res call({
-@JsonKey(name: '_id') String id,@StoreRefConverter() EntityRef<Store>? fromStoreId,@StoreRefConverter() EntityRef<Store>? toStoreId, List<TransferItem> items, TransferStatus status,@UserRefConverter() EntityRef<AppUser>? createdBy,@UserRefConverter() EntityRef<AppUser>? confirmedBy, DateTime? createdAt, DateTime? updatedAt
+@JsonKey(name: '_id') String id,@StoreRefConverter() EntityRef<Store>? fromStoreId,@StoreRefConverter() EntityRef<Store>? toStoreId, List<TransferItem> items, TransferStatus status,@UserRefConverter() EntityRef<AppUser>? createdBy,@UserRefConverter() EntityRef<AppUser>? confirmedBy, String? note,@StringishConverter() String? restockRequestId, DateTime? createdAt, DateTime? updatedAt
 });
 
 
@@ -2687,7 +2715,7 @@ class __$StockTransferCopyWithImpl<$Res>
 
 /// Create a copy of StockTransfer
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? fromStoreId = freezed,Object? toStoreId = freezed,Object? items = null,Object? status = null,Object? createdBy = freezed,Object? confirmedBy = freezed,Object? createdAt = freezed,Object? updatedAt = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? fromStoreId = freezed,Object? toStoreId = freezed,Object? items = null,Object? status = null,Object? createdBy = freezed,Object? confirmedBy = freezed,Object? note = freezed,Object? restockRequestId = freezed,Object? createdAt = freezed,Object? updatedAt = freezed,}) {
   return _then(_StockTransfer(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,fromStoreId: freezed == fromStoreId ? _self.fromStoreId : fromStoreId // ignore: cast_nullable_to_non_nullable
@@ -2696,7 +2724,9 @@ as EntityRef<Store>?,items: null == items ? _self._items : items // ignore: cast
 as List<TransferItem>,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
 as TransferStatus,createdBy: freezed == createdBy ? _self.createdBy : createdBy // ignore: cast_nullable_to_non_nullable
 as EntityRef<AppUser>?,confirmedBy: freezed == confirmedBy ? _self.confirmedBy : confirmedBy // ignore: cast_nullable_to_non_nullable
-as EntityRef<AppUser>?,createdAt: freezed == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
+as EntityRef<AppUser>?,note: freezed == note ? _self.note : note // ignore: cast_nullable_to_non_nullable
+as String?,restockRequestId: freezed == restockRequestId ? _self.restockRequestId : restockRequestId // ignore: cast_nullable_to_non_nullable
+as String?,createdAt: freezed == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,updatedAt: freezed == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,
   ));

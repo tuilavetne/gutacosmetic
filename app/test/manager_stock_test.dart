@@ -76,8 +76,7 @@ class _FakeRepo implements ManagerRepository {
 
   // --- Đề xuất nhập ---
   List<RestockRequest> restockRequests = const [];
-  final acknowledged = <String>[];
-  final received = <(String, int)>[];
+  final forwarded = <(String, int, String)>[];
   final cancelledRestock = <(String, String)>[];
 
   @override
@@ -88,16 +87,11 @@ class _FakeRepo implements ManagerRepository {
       .toList();
 
   @override
-  Future<void> acknowledgeRestock(String requestId) async =>
-      acknowledged.add(requestId);
-
-  @override
-  Future<void> receiveRestock(
+  Future<void> forwardRestock(
     String requestId, {
     required int quantity,
-    DateTime? expiryDate,
     String note = '',
-  }) async => received.add((requestId, quantity));
+  }) async => forwarded.add((requestId, quantity, note));
 
   @override
   Future<void> cancelRestock(String requestId, String note) async =>
@@ -383,7 +377,7 @@ void main() {
     expect(receipt.source, ReceiptSource.returnRejected);
   });
 
-  testWidgets('Đề xuất nhập: tiếp nhận, nhận hàng ≤ số đề xuất, hủy có lý do', (
+  testWidgets('Đề xuất nhập: chuyển lên Owner (sửa số lượng), hủy có lý do', (
     tester,
   ) async {
     final repo = await _pump(tester, [_item('p1', 'Serum B5', total: 3)]);
@@ -404,27 +398,31 @@ void main() {
     await tester.tap(find.text('Đề xuất nhập'));
     await tester.pumpAndSettle();
     expect(
-      find.text('Đề xuất 20 sp • tồn lúc đề xuất 2 • hiện còn 3'),
+      find.text('Sales đề xuất 20 sp • tồn lúc đề xuất 2 • hiện còn 3'),
       findsOneWidget,
     );
     expect(find.textContaining('Sales Demo'), findsOneWidget);
+    // Manager không còn tự nhận hàng theo đề xuất — hàng về qua phiếu chuyển.
+    expect(find.text('Nhận hàng'), findsNothing);
 
-    await tester.tap(find.text('Tiếp nhận'));
+    await tester.tap(find.widgetWithText(FilledButton, 'Chuyển lên Owner'));
     await tester.pumpAndSettle();
-    expect(repo.acknowledged, ['rq1']);
-
-    await tester.tap(find.text('Nhận hàng'));
-    await tester.pumpAndSettle();
-    final qty = find.byKey(const ValueKey('restock-receive-quantity'));
+    final qty = find.byKey(const ValueKey('restock-forward-quantity'));
     expect(tester.widget<TextField>(qty).controller!.text, '20');
-    await tester.enterText(qty, '21');
+    await tester.enterText(qty, '1001');
     await tester.pump();
-    expect(find.text('Số lượng phải từ 1 đến 20'), findsOneWidget);
+    expect(find.text('Số lượng phải từ 1 đến 1000'), findsOneWidget);
     await tester.enterText(qty, '15');
+    await tester.enterText(find.byType(TextField).last, 'Bán chạy');
     await tester.pump();
-    await tester.tap(find.text('Nhận vào kho'));
+    await tester.tap(
+      find.descendant(
+        of: find.byType(AlertDialog),
+        matching: find.widgetWithText(FilledButton, 'Chuyển lên Owner'),
+      ),
+    );
     await tester.pumpAndSettle();
-    expect(repo.received, [('rq1', 15)]);
+    expect(repo.forwarded, [('rq1', 15, 'Bán chạy')]);
 
     await tester.tap(find.text('Hủy'));
     await tester.pumpAndSettle();

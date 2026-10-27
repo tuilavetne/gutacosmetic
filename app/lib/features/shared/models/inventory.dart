@@ -120,6 +120,14 @@ abstract class RestockRequest with _$RestockRequest {
     String? managerNote,
     DateTime? resolvedAt,
     DateTime? acknowledgedAt,
+    int? forwardedQuantity,
+    @UserRefConverter() EntityRef<AppUser>? forwardedBy,
+    DateTime? forwardedAt,
+    int? approvedQuantity,
+    @UserRefConverter() EntityRef<AppUser>? approvedBy,
+    DateTime? approvedAt,
+    String? ownerNote,
+    @StringishConverter() String? transferId,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) = _RestockRequest;
@@ -228,6 +236,8 @@ abstract class StockTransfer with _$StockTransfer {
     @Default(TransferStatus.pending) TransferStatus status,
     @UserRefConverter() EntityRef<AppUser>? createdBy,
     @UserRefConverter() EntityRef<AppUser>? confirmedBy,
+    String? note,
+    @StringishConverter() String? restockRequestId,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) = _StockTransfer;

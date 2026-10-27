@@ -578,11 +578,11 @@ class _ExpiryDialogState extends ConsumerState<ExpiryDialog> {
 }
 
 // ---------------------------------------------------------------------------
-// Nhận hàng theo đề xuất của Sales
+// Chuyển đề xuất của Sales lên Owner
 // ---------------------------------------------------------------------------
 
-class RestockReceiveDialog extends ConsumerStatefulWidget {
-  const RestockReceiveDialog({super.key, required this.request});
+class RestockForwardDialog extends ConsumerStatefulWidget {
+  const RestockForwardDialog({super.key, required this.request});
 
   final RestockRequest request;
 
@@ -592,30 +592,23 @@ class RestockReceiveDialog extends ConsumerStatefulWidget {
   ) async =>
       await showDialog<bool>(
         context: context,
-        builder: (_) => RestockReceiveDialog(request: request),
+        builder: (_) => RestockForwardDialog(request: request),
       ) ??
       false;
 
   @override
-  ConsumerState<RestockReceiveDialog> createState() =>
-      _RestockReceiveDialogState();
+  ConsumerState<RestockForwardDialog> createState() =>
+      _RestockForwardDialogState();
 }
 
-class _RestockReceiveDialogState extends ConsumerState<RestockReceiveDialog> {
+class _RestockForwardDialogState extends ConsumerState<RestockForwardDialog> {
   late final _quantity = TextEditingController(
     text: '${widget.request.requestedQuantity}',
   );
   final _note = TextEditingController();
-  DateTime? _expiry;
   bool _saving = false;
 
-  /// Nhận tối đa đúng số đề xuất (và không quá 1.000/lần).
-  int get _max {
-    final requested = widget.request.requestedQuantity;
-    return requested < AppConstants.maxReceiveQuantity
-        ? requested
-        : AppConstants.maxReceiveQuantity;
-  }
+  static const _max = AppConstants.maxReceiveQuantity;
 
   int? get _qty {
     final v = int.tryParse(_quantity.text.trim());
@@ -636,23 +629,15 @@ class _RestockReceiveDialogState extends ConsumerState<RestockReceiveDialog> {
     try {
       await ref
           .read(managerRepositoryProvider)
-          .receiveRestock(
-            widget.request.id,
-            quantity: qty,
-            expiryDate: _expiry,
-            note: _note.text,
-          );
+          .forwardRestock(widget.request.id, quantity: qty, note: _note.text);
       invalidateStock(ref);
       if (!mounted) return;
       Navigator.of(context).pop(true);
-      showAppSnackBar('Đã nhận $qty sản phẩm vào kho theo đề xuất.');
+      showAppSnackBar('Đã chuyển đề xuất $qty sp lên Owner duyệt.');
     } catch (e) {
       if (!mounted) return;
       setState(() => _saving = false);
-      showAppSnackBar(
-        'Không nhận hàng được: ${errorMessageOf(e)}',
-        isError: true,
-      );
+      showAppSnackBar('Không chuyển được: ${errorMessageOf(e)}', isError: true);
     }
   }
 
@@ -660,7 +645,7 @@ class _RestockReceiveDialogState extends ConsumerState<RestockReceiveDialog> {
   Widget build(BuildContext context) {
     final request = widget.request;
     return AlertDialog(
-      title: const Text('Nhận hàng theo đề xuất'),
+      title: const Text('Chuyển đề xuất lên Owner'),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -671,38 +656,24 @@ class _RestockReceiveDialogState extends ConsumerState<RestockReceiveDialog> {
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
             Text(
-              'Sales đề xuất ${request.requestedQuantity} sp',
+              'Sales đề xuất ${request.requestedQuantity} sp. Owner duyệt sẽ '
+              'tạo phiếu chuyển hàng tới chi nhánh.',
               style: const TextStyle(color: AppColors.muted, fontSize: 12),
             ),
             const SizedBox(height: 12),
             _QuantityField(
-              fieldKey: const ValueKey('restock-receive-quantity'),
+              fieldKey: const ValueKey('restock-forward-quantity'),
               controller: _quantity,
               max: _max,
               onChanged: () => setState(() {}),
-            ),
-            const SizedBox(height: 12),
-            OutlinedButton.icon(
-              icon: const Icon(Icons.event_outlined),
-              label: Text(
-                _expiry == null
-                    ? 'Hạn sử dụng (không bắt buộc)'
-                    : 'HSD: ${formatDate(_expiry)}',
-              ),
-              onPressed: _saving
-                  ? null
-                  : () async {
-                      final picked = await _pickDate(context, initial: _expiry);
-                      if (picked != null) setState(() => _expiry = picked);
-                    },
             ),
             const SizedBox(height: 12),
             TextField(
               controller: _note,
               maxLength: 300,
               decoration: const InputDecoration(
-                labelText: 'Ghi chú cho Sales (không bắt buộc)',
-                hintText: 'Ví dụ: nhận thiếu 5 sp, kho tổng sẽ bổ sung sau',
+                labelText: 'Ghi chú cho Owner (không bắt buộc)',
+                hintText: 'Ví dụ: sản phẩm bán chạy, cần trước cuối tuần',
                 border: OutlineInputBorder(),
               ),
             ),
@@ -716,7 +687,7 @@ class _RestockReceiveDialogState extends ConsumerState<RestockReceiveDialog> {
         ),
         FilledButton(
           onPressed: _qty == null || _saving ? null : _save,
-          child: const Text('Nhận vào kho'),
+          child: const Text('Chuyển lên Owner'),
         ),
       ],
     );
