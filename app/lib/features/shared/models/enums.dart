@@ -166,16 +166,26 @@ enum ReceiptSource {
 }
 
 @JsonEnum(fieldRename: FieldRename.screamingSnake)
+/// Sales đề xuất (open) → Manager chuyển lên (forwarded) → Owner duyệt, tạo
+/// phiếu chuyển (inTransit) → Manager nhận hàng (resolved). Hủy/từ chối:
+/// cancelled.
 enum RestockStatus {
   open,
+  forwarded,
+  inTransit,
   resolved,
   cancelled;
 
   String get label => switch (this) {
-    open => 'Đang mở',
+    open => 'Chờ Manager',
+    forwarded => 'Chờ Owner duyệt',
+    inTransit => 'Đang chuyển hàng',
     resolved => 'Đã nhận hàng',
     cancelled => 'Đã hủy',
   };
+
+  /// Còn đang xử lý (chưa nhận hàng, chưa hủy).
+  bool get isActive => this == open || this == forwarded || this == inTransit;
 }
 
 @JsonEnum(fieldRename: FieldRename.screamingSnake)

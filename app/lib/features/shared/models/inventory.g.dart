@@ -155,6 +155,27 @@ _RestockRequest _$RestockRequestFromJson(Map<String, dynamic> json) =>
       acknowledgedAt: json['acknowledgedAt'] == null
           ? null
           : DateTime.parse(json['acknowledgedAt'] as String),
+      forwardedQuantity: (json['forwardedQuantity'] as num?)?.toInt(),
+      forwardedBy: _$JsonConverterFromJson<Object, EntityRef<AppUser>>(
+        json['forwardedBy'],
+        const UserRefConverter().fromJson,
+      ),
+      forwardedAt: json['forwardedAt'] == null
+          ? null
+          : DateTime.parse(json['forwardedAt'] as String),
+      approvedQuantity: (json['approvedQuantity'] as num?)?.toInt(),
+      approvedBy: _$JsonConverterFromJson<Object, EntityRef<AppUser>>(
+        json['approvedBy'],
+        const UserRefConverter().fromJson,
+      ),
+      approvedAt: json['approvedAt'] == null
+          ? null
+          : DateTime.parse(json['approvedAt'] as String),
+      ownerNote: json['ownerNote'] as String?,
+      transferId: _$JsonConverterFromJson<Object, String>(
+        json['transferId'],
+        const StringishConverter().fromJson,
+      ),
       createdAt: json['createdAt'] == null
           ? null
           : DateTime.parse(json['createdAt'] as String),
@@ -193,12 +214,31 @@ Map<String, dynamic> _$RestockRequestToJson(_RestockRequest instance) =>
       'managerNote': ?instance.managerNote,
       'resolvedAt': ?instance.resolvedAt?.toIso8601String(),
       'acknowledgedAt': ?instance.acknowledgedAt?.toIso8601String(),
+      'forwardedQuantity': ?instance.forwardedQuantity,
+      'forwardedBy': ?_$JsonConverterToJson<Object, EntityRef<AppUser>>(
+        instance.forwardedBy,
+        const UserRefConverter().toJson,
+      ),
+      'forwardedAt': ?instance.forwardedAt?.toIso8601String(),
+      'approvedQuantity': ?instance.approvedQuantity,
+      'approvedBy': ?_$JsonConverterToJson<Object, EntityRef<AppUser>>(
+        instance.approvedBy,
+        const UserRefConverter().toJson,
+      ),
+      'approvedAt': ?instance.approvedAt?.toIso8601String(),
+      'ownerNote': ?instance.ownerNote,
+      'transferId': ?_$JsonConverterToJson<Object, String>(
+        instance.transferId,
+        const StringishConverter().toJson,
+      ),
       'createdAt': ?instance.createdAt?.toIso8601String(),
       'updatedAt': ?instance.updatedAt?.toIso8601String(),
     };
 
 const _$RestockStatusEnumMap = {
   RestockStatus.open: 'OPEN',
+  RestockStatus.forwarded: 'FORWARDED',
+  RestockStatus.inTransit: 'IN_TRANSIT',
   RestockStatus.resolved: 'RESOLVED',
   RestockStatus.cancelled: 'CANCELLED',
 };
@@ -439,6 +479,11 @@ _StockTransfer _$StockTransferFromJson(Map<String, dynamic> json) =>
         json['confirmedBy'],
         const UserRefConverter().fromJson,
       ),
+      note: json['note'] as String?,
+      restockRequestId: _$JsonConverterFromJson<Object, String>(
+        json['restockRequestId'],
+        const StringishConverter().fromJson,
+      ),
       createdAt: json['createdAt'] == null
           ? null
           : DateTime.parse(json['createdAt'] as String),
@@ -467,6 +512,11 @@ Map<String, dynamic> _$StockTransferToJson(_StockTransfer instance) =>
       'confirmedBy': ?_$JsonConverterToJson<Object, EntityRef<AppUser>>(
         instance.confirmedBy,
         const UserRefConverter().toJson,
+      ),
+      'note': ?instance.note,
+      'restockRequestId': ?_$JsonConverterToJson<Object, String>(
+        instance.restockRequestId,
+        const StringishConverter().toJson,
       ),
       'createdAt': ?instance.createdAt?.toIso8601String(),
       'updatedAt': ?instance.updatedAt?.toIso8601String(),

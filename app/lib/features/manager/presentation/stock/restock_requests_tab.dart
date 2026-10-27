@@ -3,18 +3,17 @@ import 'package:material_ui/material_ui.dart';
 
 import '../../../../app/theme.dart';
 import '../../../../core/network/api_exception.dart';
-import '../../../../core/utils/formatters.dart';
 import '../../../../core/widgets/app_messenger.dart';
 import '../../../../core/widgets/confirm_dialog.dart';
 import '../../../../core/widgets/state_views.dart';
-import '../../../../core/widgets/status_chip.dart';
 import '../../../session/session_controller.dart';
+import '../../../shared/presentation/restock_request_details.dart';
 import '../../../shared/models/models.dart';
 import '../../data/manager_repository.dart';
 import 'stock_dialogs.dart';
 
-/// Manager xử lý đề xuất nhập hàng của Sales: tiếp nhận, nhận hàng vào kho
-/// hoặc hủy kèm lý do.
+/// Manager xử lý đề xuất nhập hàng của Sales: chuyển lên Owner (được sửa số
+/// lượng) hoặc hủy kèm lý do. Hàng về qua "Hàng chuyển đến".
 class RestockRequestsTab extends ConsumerStatefulWidget {
   const RestockRequestsTab({super.key});
 
@@ -110,12 +109,24 @@ class _RestockCard extends ConsumerStatefulWidget {
 class _RestockCardState extends ConsumerState<_RestockCard> {
   bool _busy = false;
 
-  Future<void> _run(Future<void> Function() action, String done) async {
+  Future<void> _cancel() async {
+    final note = await showReasonDialog(
+      context,
+      title: 'Hủy đề xuất nhập?',
+      message: 'Lý do sẽ hiển thị cho Sales.',
+      confirmLabel: 'Hủy đề xuất',
+      hint: 'Ví dụ: chi nhánh còn đủ hàng',
+      minLength: 3,
+      maxLength: 300,
+    );
+    if (note == null || !mounted) return;
     setState(() => _busy = true);
     try {
-      await action();
+      await ref
+          .read(managerRepositoryProvider)
+          .cancelRestock(widget.request.id, note);
       invalidateStock(ref);
-      showAppSnackBar(done);
+      showAppSnackBar('Đã hủy đề xuất.');
     } catch (e) {
       showAppSnackBar(errorMessageOf(e), isError: true);
     } finally {
@@ -123,126 +134,32 @@ class _RestockCardState extends ConsumerState<_RestockCard> {
     }
   }
 
-  Future<void> _cancel() async {
-    final note = await showReasonDialog(
-      context,
-      title: 'Hủy đề xuất nhập?',
-      message: 'Lý do sẽ hiển thị cho Sales.',
-      confirmLabel: 'Hủy đề xuất',
-      hint: 'Ví dụ: kho tổng đang hết hàng',
-      minLength: 3,
-      maxLength: 300,
-    );
-    if (note == null || !mounted) return;
-    await _run(
-      () => ref
-          .read(managerRepositoryProvider)
-          .cancelRestock(widget.request.id, note),
-      'Đã hủy đề xuất.',
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final request = widget.request;
-    final isOpen = request.status == RestockStatus.open;
-    final statusColor = switch (request.status) {
-      RestockStatus.open => AppColors.warning,
-      RestockStatus.resolved => AppColors.success,
-      RestockStatus.cancelled => AppColors.muted,
-    };
-    final note = request.managerNote?.trim() ?? '';
-    final reason = request.reason?.trim() ?? '';
+    final canCancel =
+        request.status == RestockStatus.open ||
+        request.status == RestockStatus.forwarded;
 
-    return Card(
-      elevation: 0,
-      margin: EdgeInsets.zero,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(14),
-        side: const BorderSide(color: AppColors.border),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    request.productId?.data?.name ?? 'Sản phẩm',
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                ),
-                StatusChip(label: request.status.label, color: statusColor),
-              ],
-            ),
-            const SizedBox(height: 6),
-            Text(
-              'Đề xuất ${request.requestedQuantity} sp • tồn lúc đề xuất '
-              '${request.currentAvailableStock}'
-              '${widget.availableNow != null ? ' • hiện còn ${widget.availableNow}' : ''}',
-            ),
-            if (reason.isNotEmpty)
-              Text(
-                'Lý do: $reason',
-                style: const TextStyle(fontSize: 12, color: AppColors.muted),
-              ),
-            Text(
-              [
-                ?request.requestedBy?.data?.displayName,
-                formatDateTime(request.createdAt),
-              ].join(' • '),
-              style: const TextStyle(fontSize: 11, color: AppColors.muted),
-            ),
-            if (request.acknowledgedAt != null && isOpen)
-              Text(
-                'Đã tiếp nhận lúc ${formatDateTime(request.acknowledgedAt)}',
-                style: const TextStyle(fontSize: 12, color: AppColors.info),
-              ),
-            if (note.isNotEmpty) ...[
-              const SizedBox(height: 6),
-              Text('Ghi chú: $note', style: const TextStyle(fontSize: 12)),
-            ],
-            if (isOpen) ...[
-              const Divider(height: 20),
-              Wrap(
-                spacing: 8,
-                runSpacing: 6,
-                alignment: WrapAlignment.end,
-                children: [
-                  TextButton(
-                    style: TextButton.styleFrom(
-                      foregroundColor: AppColors.accent,
-                    ),
-                    onPressed: _busy ? null : _cancel,
-                    child: const Text('Hủy'),
-                  ),
-                  if (request.acknowledgedAt == null)
-                    OutlinedButton(
-                      onPressed: _busy
-                          ? null
-                          : () => _run(
-                              () => ref
-                                  .read(managerRepositoryProvider)
-                                  .acknowledgeRestock(request.id),
-                              'Đã tiếp nhận đề xuất.',
-                            ),
-                      child: const Text('Tiếp nhận'),
-                    ),
-                  FilledButton.icon(
-                    icon: const Icon(Icons.move_to_inbox_outlined, size: 18),
-                    label: const Text('Nhận hàng'),
-                    onPressed: _busy
-                        ? null
-                        : () => RestockReceiveDialog.show(context, request),
-                  ),
-                ],
-              ),
-            ],
-          ],
-        ),
-      ),
+    return RestockRequestCard(
+      request: request,
+      availableNow: widget.availableNow,
+      actions: [
+        if (canCancel)
+          TextButton(
+            style: TextButton.styleFrom(foregroundColor: AppColors.accent),
+            onPressed: _busy ? null : _cancel,
+            child: const Text('Hủy'),
+          ),
+        if (request.status == RestockStatus.open)
+          FilledButton.icon(
+            icon: const Icon(Icons.upload_outlined, size: 18),
+            label: const Text('Chuyển lên Owner'),
+            onPressed: _busy
+                ? null
+                : () => RestockForwardDialog.show(context, request),
+          ),
+      ],
     );
   }
 }

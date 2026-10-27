@@ -154,7 +154,7 @@ void main() {
     expect(repo.created.single.quantity, 25);
     expect(repo.created.single.reason, 'Khách hỏi nhiều');
     // Danh sách tải lại: cảnh báo hiện "đã đề xuất" thay cho nút
-    expect(find.text('Đã đề xuất 25 sp • chờ Quản lý xử lý'), findsOneWidget);
+    expect(find.text('Đã đề xuất 25 sp • Chờ Manager'), findsOneWidget);
     expect(find.text('Đề xuất bổ sung'), findsOneWidget);
   });
 
@@ -188,14 +188,16 @@ void main() {
           requestedQuantity: 20,
           currentAvailableStock: 4,
           reason: 'Sắp hết',
-          acknowledgedAt: DateTime(2026, 10, 24, 9),
+          status: RestockStatus.forwarded,
+          forwardedQuantity: 25,
+          forwardedAt: DateTime(2026, 10, 24, 9),
         ),
         const RestockRequest(
           id: 'r2',
           productId: EntityRef('p1', _serum),
           requestedQuantity: 10,
           status: RestockStatus.resolved,
-          managerNote: 'Đã nhận 10 sp vào kho',
+          ownerNote: 'Chuyển từ kho tổng',
         ),
       ],
     );
@@ -204,16 +206,24 @@ void main() {
     await tester.tap(find.text('Đề xuất của chi nhánh'));
     await tester.pumpAndSettle();
 
-    // Mặc định lọc đề xuất đang mở
-    expect(repo.lastStatusFilter, RestockStatus.open);
-    expect(find.text('Đề xuất: 20 sp • Tồn lúc đề xuất: 4'), findsOneWidget);
-    expect(find.textContaining('Quản lý đã tiếp nhận'), findsOneWidget);
-    expect(find.textContaining('Đã nhận 10 sp'), findsNothing);
-
-    await tester.tap(find.text('Tất cả'));
-    await tester.pumpAndSettle();
+    // Mặc định xem tất cả, kèm tiến trình từng đề xuất
     expect(repo.lastStatusFilter, isNull);
-    expect(find.text('Quản lý: Đã nhận 10 sp vào kho'), findsOneWidget);
+    expect(
+      find.text('Sales đề xuất 20 sp • tồn lúc đề xuất 4'),
+      findsOneWidget,
+    );
+    expect(
+      find.textContaining('Manager chuyển lên Owner 25 sp'),
+      findsOneWidget,
+    );
+    expect(find.text('Owner: Chuyển từ kho tổng'), findsOneWidget);
+
+    await tester.tap(
+      find.widgetWithText(ChoiceChip, RestockStatus.forwarded.label),
+    );
+    await tester.pumpAndSettle();
+    expect(repo.lastStatusFilter, RestockStatus.forwarded);
+    expect(find.text('Owner: Chuyển từ kho tổng'), findsNothing);
     // Sales không có thao tác nhận hàng / hủy đề xuất
     expect(find.text('Nhận hàng'), findsNothing);
     expect(find.text('Hủy đề xuất'), findsNothing);

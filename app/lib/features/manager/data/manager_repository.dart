@@ -275,30 +275,24 @@ class ManagerRepository {
     return parseList(json, 'requests', RestockRequest.fromJson);
   }
 
-  /// Báo cho Sales biết Manager đã xem đề xuất.
-  Future<void> acknowledgeRestock(String requestId) async {
-    await _api.post('/inventory/restock-requests/$requestId/acknowledge');
-  }
-
-  /// Nhận hàng theo đề xuất (≤ số đề xuất): cộng kho, tạo phiếu nhập nguồn
-  /// "Theo đề xuất Sales", đề xuất chuyển RESOLVED.
-  Future<void> receiveRestock(
+  /// Chuyển đề xuất của Sales lên Owner (được sửa số lượng). Owner duyệt sẽ tạo
+  /// phiếu chuyển hàng; Manager nhận hàng ở "Hàng chuyển đến" thì đề xuất tự
+  /// hoàn tất.
+  Future<void> forwardRestock(
     String requestId, {
     required int quantity,
-    DateTime? expiryDate,
     String note = '',
   }) async {
     await _api.post(
-      '/inventory/restock-requests/$requestId/receive',
+      '/inventory/restock-requests/$requestId/forward',
       data: {
-        'receivedQuantity': quantity,
-        if (expiryDate != null) 'expiryDate': _dateOnly(expiryDate),
-        if (note.trim().isNotEmpty) 'managerNote': note.trim(),
+        'quantity': quantity,
+        if (note.trim().isNotEmpty) 'note': note.trim(),
       },
     );
   }
 
-  /// Hủy đề xuất — bắt buộc ghi lý do để Sales biết.
+  /// Hủy đề xuất (chờ Manager hoặc chờ Owner duyệt) — bắt buộc ghi lý do.
   Future<void> cancelRestock(String requestId, String note) async {
     await _api.patch(
       '/inventory/restock-requests/$requestId',

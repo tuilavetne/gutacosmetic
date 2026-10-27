@@ -6,6 +6,7 @@ import '../../../core/utils/formatters.dart';
 import '../../../core/widgets/state_views.dart';
 import '../../../core/widgets/status_chip.dart';
 import '../../shared/models/models.dart';
+import '../../shared/presentation/restock_request_details.dart';
 import '../data/sales_repository.dart';
 import 'widgets/restock_request_dialog.dart';
 
@@ -85,15 +86,17 @@ class _AlertsTabState extends ConsumerState<_AlertsTab> {
   @override
   Widget build(BuildContext context) {
     final alertsAsync = ref.watch(salesInventoryAlertsProvider);
-    // Đề xuất đang mở theo sản phẩm, để hiện "đã đề xuất" trên từng cảnh báo.
-    final openRequests = {
-      for (final request
-          in ref
-                  .watch(salesRestockRequestsProvider(RestockStatus.open))
-                  .value ??
-              const <RestockRequest>[])
-        if (request.productId != null) request.productId!.id: request,
-    };
+    // Đề xuất đang xử lý theo sản phẩm (chờ Manager / chờ Owner / đang chuyển
+    // hàng), để hiện "đã đề xuất" trên từng cảnh báo.
+    final openRequests = <String, RestockRequest>{};
+    for (final request
+        in ref.watch(salesRestockRequestsProvider(null)).value ??
+            const <RestockRequest>[]) {
+      final productId = request.productId?.id;
+      if (productId != null && request.status.isActive) {
+        openRequests.putIfAbsent(productId, () => request);
+      }
+    }
 
     return Column(
       children: [
@@ -227,7 +230,7 @@ class _AlertCard extends StatelessWidget {
                     Expanded(
                       child: Text(
                         'Đã đề xuất ${openRequest!.requestedQuantity} sp • '
-                        'chờ Quản lý xử lý',
+                        '${openRequest!.status.label}',
                         style: const TextStyle(
                           fontSize: 12,
                           color: AppColors.info,
@@ -238,20 +241,22 @@ class _AlertCard extends StatelessWidget {
                   else
                     const Spacer(),
                   const SizedBox(width: 8),
-                  openRequest != null
-                      ? TextButton(
-                          onPressed: () => _requestRestock(context),
-                          child: const Text('Cập nhật đề xuất'),
-                        )
-                      : FilledButton.icon(
-                          style: FilledButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                            visualDensity: VisualDensity.compact,
-                          ),
-                          icon: const Icon(Icons.add_box_outlined, size: 18),
-                          label: const Text('Đề xuất bổ sung'),
-                          onPressed: () => _requestRestock(context),
-                        ),
+                  // Chỉ sửa được khi Manager chưa chuyển lên Owner.
+                  if (openRequest?.status == RestockStatus.open)
+                    TextButton(
+                      onPressed: () => _requestRestock(context),
+                      child: const Text('Cập nhật đề xuất'),
+                    )
+                  else if (openRequest == null)
+                    FilledButton.icon(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        visualDensity: VisualDensity.compact,
+                      ),
+                      icon: const Icon(Icons.add_box_outlined, size: 18),
+                      label: const Text('Đề xuất bổ sung'),
+                      onPressed: () => _requestRestock(context),
+                    ),
                 ],
               ),
             ],
@@ -286,7 +291,7 @@ class _RestockRequestsTab extends ConsumerStatefulWidget {
 
 class _RestockRequestsTabState extends ConsumerState<_RestockRequestsTab> {
   /// `null` = tất cả trạng thái.
-  RestockStatus? _status = RestockStatus.open;
+  RestockStatus? _status;
 
   @override
   Widget build(BuildContext context) {
@@ -295,7 +300,7 @@ class _RestockRequestsTabState extends ConsumerState<_RestockRequestsTab> {
     return Column(
       children: [
         _FilterChips<RestockStatus?>(
-          values: const [...RestockStatus.values, null],
+          values: const [null, ...RestockStatus.values],
           selected: _status,
           labelOf: (s) => s?.label ?? 'Tất cả',
           onSelected: (s) => setState(() => _status = s),
@@ -324,114 +329,12 @@ class _RestockRequestsTabState extends ConsumerState<_RestockRequestsTab> {
                       itemCount: requests.length,
                       separatorBuilder: (_, _) => const SizedBox(height: 12),
                       itemBuilder: (context, index) =>
-                          _RestockRequestCard(request: requests[index]),
+                          RestockRequestCard(request: requests[index]),
                     ),
             ),
           ),
         ),
       ],
-    );
-  }
-}
-
-class _RestockRequestCard extends StatelessWidget {
-  const _RestockRequestCard({required this.request});
-
-  final RestockRequest request;
-
-  @override
-  Widget build(BuildContext context) {
-    final product = request.productId?.data;
-    final statusColor = switch (request.status) {
-      RestockStatus.open => AppColors.info,
-      RestockStatus.resolved => AppColors.success,
-      RestockStatus.cancelled => AppColors.muted,
-    };
-    final requester = request.requestedBy?.data?.displayName;
-    final note = request.managerNote?.trim() ?? '';
-    final reason = request.reason?.trim() ?? '';
-
-    return Card(
-      elevation: 0,
-      margin: EdgeInsets.zero,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(14),
-        side: const BorderSide(color: AppColors.border),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Text(
-                    product?.name ?? 'Sản phẩm',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                StatusChip(label: request.status.label, color: statusColor),
-              ],
-            ),
-            const SizedBox(height: 6),
-            Text(
-              'Đề xuất: ${request.requestedQuantity} sp • '
-              'Tồn lúc đề xuất: ${request.currentAvailableStock}',
-              style: const TextStyle(fontSize: 13),
-            ),
-            if (reason.isNotEmpty) ...[
-              const SizedBox(height: 4),
-              Text(
-                'Lý do: $reason',
-                style: const TextStyle(fontSize: 12, color: AppColors.muted),
-              ),
-            ],
-            const SizedBox(height: 4),
-            Text(
-              [
-                if (requester != null) 'Người đề xuất: $requester',
-                formatDateTime(request.createdAt),
-              ].join(' • '),
-              style: const TextStyle(fontSize: 11, color: AppColors.muted),
-            ),
-            if (request.status == RestockStatus.open &&
-                request.acknowledgedAt != null) ...[
-              const SizedBox(height: 4),
-              Text(
-                'Quản lý đã tiếp nhận lúc ${formatDateTime(request.acknowledgedAt)}',
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: AppColors.info,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-            if (note.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: AppColors.background,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  'Quản lý: $note',
-                  style: const TextStyle(fontSize: 12),
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
     );
   }
 }
