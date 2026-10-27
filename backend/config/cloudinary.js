@@ -80,6 +80,58 @@ const uploadAvatar = (req, res, next) => {
   });
 };
 
+// ─── Ảnh sản phẩm – tối đa 6 ảnh (1 ảnh chính + 5 ảnh phụ), mỗi ảnh ≤ 5 MB ───
+const MAX_PRODUCT_UPLOAD_FILES = 6;
+
+const productImageUploader = multer({
+  storage: new CloudinaryStorage({
+    cloudinary,
+    params: {
+      folder: "guta_cosmetic/products",
+      allowed_formats: ["jpg", "jpeg", "png", "webp"],
+      transformation: [{ width: 1200, height: 1200, crop: "limit", quality: "auto" }],
+    },
+  }),
+  limits: { fileSize: 5 * 1024 * 1024, files: MAX_PRODUCT_UPLOAD_FILES },
+  fileFilter: (_req, file, cb) => {
+    if (/jpeg|jpg|png|webp/.test(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(
+        new AppError("Product images must be JPG, PNG or WEBP", 400, "INVALID_IMAGE_TYPE"),
+        false
+      );
+    }
+  },
+}).array("images", MAX_PRODUCT_UPLOAD_FILES);
+
+const uploadProductImages = (req, res, next) => {
+  productImageUploader(req, res, (error) => {
+    if (error) {
+      if (error instanceof AppError) return next(error);
+      if (error.code === "LIMIT_FILE_SIZE") {
+        return next(new AppError("Each image must be at most 5 MB", 400, "IMAGE_TOO_LARGE"));
+      }
+      if (error.code === "LIMIT_FILE_COUNT" || error.code === "LIMIT_UNEXPECTED_FILE") {
+        return next(
+          new AppError(
+            `Upload at most ${MAX_PRODUCT_UPLOAD_FILES} images at a time`,
+            400,
+            "TOO_MANY_PRODUCT_IMAGES"
+          )
+        );
+      }
+      return next(new AppError("Could not upload images", 502, "IMAGE_UPLOAD_FAILED"));
+    }
+
+    if (!req.files || req.files.length === 0) {
+      return next(new AppError("At least one image is required", 400, "IMAGES_REQUIRED"));
+    }
+
+    return next();
+  });
+};
+
 /// public_id Cloudinary của ảnh đại diện do app upload (null nếu là ảnh khác,
 /// ví dụ ảnh Google).
 const avatarPublicIdFromUrl = (url) => {
@@ -89,4 +141,10 @@ const avatarPublicIdFromUrl = (url) => {
   return match ? match[1] : null;
 };
 
-module.exports = { avatarPublicIdFromUrl, cloudinary, upload, uploadAvatar };
+module.exports = {
+  avatarPublicIdFromUrl,
+  cloudinary,
+  upload,
+  uploadAvatar,
+  uploadProductImages,
+};

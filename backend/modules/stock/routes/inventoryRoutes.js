@@ -31,22 +31,17 @@ router
     inventoryController.createRestockRequest
   );
 
+// Manager hủy đề xuất (Owner từ chối qua /owner/restock-requests/:id/reject).
 router.patch(
   "/restock-requests/:requestId",
-  authorize(USER_ROLES.OWNER, USER_ROLES.MANAGER),
+  authorize(USER_ROLES.MANAGER),
   inventoryController.updateRestockRequestStatus
 );
 
 router.post(
-  "/restock-requests/:requestId/acknowledge",
-  authorize(USER_ROLES.OWNER, USER_ROLES.MANAGER),
-  inventoryController.acknowledgeRestockRequest
-);
-
-router.post(
-  "/restock-requests/:requestId/receive",
+  "/restock-requests/:requestId/forward",
   authorize(USER_ROLES.MANAGER),
-  inventoryController.receiveRestockRequest
+  inventoryController.forwardRestockRequest
 );
 
 router

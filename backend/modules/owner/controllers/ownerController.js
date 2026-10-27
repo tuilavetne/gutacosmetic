@@ -1,4 +1,5 @@
 const ownerService = require("../services/ownerService");
+const ownerReportService = require("../services/ownerReportService");
 
 const getProducts = async (req, res, next) => {
   try {
@@ -14,10 +15,57 @@ const getProducts = async (req, res, next) => {
   }
 };
 
-const getRevenueAnalytics = async (req, res, next) => {
+const getDashboard = async (req, res, next) => {
   try {
-    const analytics = await ownerService.getRevenueAnalytics();
-    res.json({ analytics });
+    const dashboard = await ownerReportService.getDashboard(req.user);
+    res.json({ dashboard });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const getRevenueReport = async (req, res, next) => {
+  try {
+    const report = await ownerReportService.getRevenueReport({
+      from: req.query.from,
+      to: req.query.to,
+      storeId: req.query.storeId,
+    });
+    res.json({ report });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Ảnh đã được multer-storage-cloudinary tải lên; trả về đường dẫn để gắn vào
+// sản phẩm khi lưu.
+const uploadProductImages = (req, res) => {
+  res.status(201).json({
+    images: (req.files || []).map((file) => file.path),
+  });
+};
+
+const approveRestockRequest = async (req, res, next) => {
+  try {
+    const result = await ownerService.approveRestockRequest(
+      req.params.requestId,
+      req.body,
+      req.user
+    );
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+};
+
+const rejectRestockRequest = async (req, res, next) => {
+  try {
+    const request = await ownerService.rejectRestockRequest(
+      req.params.requestId,
+      req.body,
+      req.user
+    );
+    res.json({ request });
   } catch (error) {
     next(error);
   }
@@ -137,17 +185,21 @@ const cancelTransfer = async (req, res, next) => {
 };
 
 module.exports = {
+  approveRestockRequest,
   cancelTransfer,
   createProduct,
   createStaff,
   createStore,
   createTransfer,
   getProducts,
-  getRevenueAnalytics,
+  getDashboard,
+  getRevenueReport,
   getStaff,
   getStores,
   getTransfers,
+  rejectRestockRequest,
   updateProduct,
   updateStaff,
   updateStore,
+  uploadProductImages,
 };

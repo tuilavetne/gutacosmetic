@@ -1,6 +1,5 @@
 const mongoose = require("mongoose");
-const InventoryAdjustment = require("../../../models/InventoryAdjustment");
-const InventoryReceipt = require("../../../models/InventoryReceipt");
+const InventoryRequest = require("../../../models/InventoryRequest");
 const Order = require("../../../models/Order");
 const Product = require("../../../models/Product");
 const Store = require("../../../models/Store");
@@ -11,7 +10,7 @@ const AppError = require("../../../utils/AppError");
 const { runInTransaction } = require("../../stock/services/transactionService");
 const inventoryMutationService = require("../../stock/services/inventoryService");
 const {
-  PAYMENT_STATUSES,
+  ORDER_STATUSES,
   STORE_TYPES,
   USER_ROLES,
 } = require("../../../constants/business");
@@ -26,6 +25,18 @@ const {
 
 const PRODUCT_FIELDS = "name sku brand category image price isActive";
 const STAFF_ROLES = [USER_ROLES.OWNER, USER_ROLES.MANAGER, USER_ROLES.SALES];
+// Owner chỉ tạo/sửa Manager và Sales; tài khoản Owner không quản lý ở đây.
+const ASSIGNABLE_ROLES = [USER_ROLES.MANAGER, USER_ROLES.SALES];
+const MAX_PRODUCT_GALLERY_IMAGES = 5;
+const MAX_TRANSFER_QUANTITY = 1000;
+// Đơn còn đang xử lý: chi nhánh có các đơn này thì chưa được ngừng hoạt động.
+const ACTIVE_ORDER_STATUSES = [
+  ORDER_STATUSES.PENDING_APPROVAL,
+  ORDER_STATUSES.PENDING_PAYMENT,
+  ORDER_STATUSES.PENDING,
+  ORDER_STATUSES.PREPARING,
+  ORDER_STATUSES.READY_FOR_PICKUP,
+];
 const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 const parseOptionalString = (value) =>
@@ -186,6 +197,14 @@ const buildProductPayload = (payload, { isCreate = false } = {}) => {
 
   if (payload.images !== undefined) {
     nextPayload.images = parseStringArray(payload.images);
+
+    if (nextPayload.images.length > MAX_PRODUCT_GALLERY_IMAGES) {
+      throw new AppError(
+        `A product can have at most ${MAX_PRODUCT_GALLERY_IMAGES} gallery images`,
+        400,
+        "TOO_MANY_PRODUCT_IMAGES"
+      );
+    }
   }
 
   if (payload.skinTypes !== undefined) {
@@ -295,10 +314,13 @@ const buildStaffPayload = async (payload, { isCreate = false } = {}) => {
   if (isCreate || payload.role !== undefined) {
     const role = requireString(payload.role, "role").toUpperCase();
 
-    if (!STAFF_ROLES.includes(role)) {
-      throw new AppError("Role is invalid", 400, "VALIDATION_ERROR", {
-        field: "role",
-      });
+    if (!ASSIGNABLE_ROLES.includes(role)) {
+      throw new AppError(
+        "Only Manager or Sales accounts can be managed here",
+        400,
+        "ROLE_NOT_ALLOWED",
+        { field: "role" }
+      );
     }
 
     nextPayload.role = role;
@@ -318,28 +340,31 @@ const buildStaffPayload = async (payload, { isCreate = false } = {}) => {
     nextPayload.disabledReason = parseOptionalString(payload.disabledReason);
   }
 
-  if (
-    nextPayload.role &&
-    [USER_ROLES.MANAGER, USER_ROLES.SALES].includes(nextPayload.role)
-  ) {
-    if (!nextPayload.storeId) {
-      throw new AppError("Store ID is required for staff", 400, "VALIDATION_ERROR", {
-        field: "storeId",
-      });
-    }
-
-    await ensureStoreExists(nextPayload.storeId);
-  }
-
-  if (nextPayload.storeId && !nextPayload.role) {
-    await ensureStoreExists(nextPayload.storeId);
-  }
-
-  if (nextPayload.role === USER_ROLES.OWNER) {
-    nextPayload.storeId = null;
-  }
-
   return nextPayload;
+};
+
+// Sales/Manager bắt buộc gán một chi nhánh đang hoạt động.
+const assertStaffStore = async (role, storeId) => {
+  if (!ASSIGNABLE_ROLES.includes(role)) {
+    return;
+  }
+
+  if (!storeId) {
+    throw new AppError(
+      "Sales and Manager accounts must be assigned to a store",
+      400,
+      "STORE_REQUIRED",
+      { field: "storeId" }
+    );
+  }
+
+  const store = await ensureStoreExists(storeId);
+
+  if (!store.isActive) {
+    throw new AppError("Store is inactive", 409, "STORE_INACTIVE", {
+      field: "storeId",
+    });
+  }
 };
 
 const seedInventoryForNewProduct = async (productId, session) => {
@@ -419,9 +444,18 @@ const createManagedProduct = async (payload) => {
   });
 };
 
+// SKU cố định sau khi tạo (đơn hàng, phiếu kho đã ghi theo SKU).
 const updateManagedProduct = async (productId, payload) => {
-  await ensureProductExists(productId);
-  const nextPayload = buildProductPayload(payload);
+  const product = await ensureProductExists(productId);
+
+  if (
+    payload.sku !== undefined &&
+    String(payload.sku).trim().toUpperCase() !== product.sku
+  ) {
+    throw new AppError("SKU cannot be changed", 400, "SKU_IMMUTABLE");
+  }
+
+  const nextPayload = buildProductPayload({ ...payload, sku: undefined });
 
   return Product.findByIdAndUpdate(productId, nextPayload, {
     new: true,
@@ -434,195 +468,21 @@ const getManagedStores = async ({ includeInactive = true } = {}) => {
   return Store.find(query).sort({ isActive: -1, name: 1 }).lean();
 };
 
-const getRevenueAnalytics = async () => {
-  const now = new Date();
-  const currentMonth = now.getMonth();
-  const currentYear = now.getFullYear();
-
-  const [
-    adjustments,
-    products,
-    receipts,
-    paidOrders,
-    stores,
-    storeInventories,
-    totalOrders,
-  ] = await Promise.all([
-    InventoryAdjustment.find({}).select("productId quantity storeId").lean(),
-    Product.find({}).select("brand category costPrice name price sku").lean(),
-    InventoryReceipt.find({}).select("productId quantity source storeId").lean(),
-    Order.find({ paymentStatus: PAYMENT_STATUSES.PAID })
-      .select("channel createdAt items paidAt storeId totalPrice updatedAt")
-      .lean(),
-    Store.find({}).lean(),
-    StoreInventory.find({})
-      .select("productId storeId totalStock")
-      .lean(),
-    Order.countDocuments({}),
-  ]);
-
-  const productById = new Map(products.map((product) => [String(product._id), product]));
-  const missingCostProductIds = new Set();
-  const storeAnalyticsMap = new Map(
-    stores.map((store) => [
-      String(store._id),
-      {
-        store,
-        orderCount: 0,
-        paidOrderCount: 0,
-        revenue: 0,
-        onlineRevenue: 0,
-        offlineRevenue: 0,
-        soldCost: 0,
-        grossProfit: 0,
-        writeOffCost: 0,
-        stockInCost: 0,
-        inventoryValue: 0,
-        totalStockUnits: 0,
-      },
-    ])
-  );
-
-  const resolveCostPrice = (productId) => {
-    const product = productById.get(String(productId));
-    const costPrice = product?.costPrice;
-
-    if (typeof costPrice === "number" && Number.isFinite(costPrice)) {
-      return costPrice;
-    }
-
-    if (productId) {
-      missingCostProductIds.add(String(productId));
-    }
-
-    return null;
-  };
-
-  const totalPaidRevenue = paidOrders.reduce((sum, order) => sum + order.totalPrice, 0);
-  let inventoryValue = 0;
-  let monthlyRevenue = 0;
-  let monthlySoldCost = 0;
-  let soldCost = 0;
-  let stockInCost = 0;
-  let writeOffCost = 0;
-
-  for (const order of paidOrders) {
-    const storeAnalytics = storeAnalyticsMap.get(String(order.storeId || ""));
-    const referenceDate = new Date(order.paidAt || order.updatedAt || order.createdAt);
-    const orderSoldCost = order.items.reduce((sum, item) => {
-      const costPrice = resolveCostPrice(item.productId);
-      return costPrice === null ? sum : sum + costPrice * item.quantity;
-    }, 0);
-
-    soldCost += orderSoldCost;
-
-    if (
-      referenceDate.getMonth() === currentMonth &&
-      referenceDate.getFullYear() === currentYear
-    ) {
-      monthlyRevenue += order.totalPrice;
-      monthlySoldCost += orderSoldCost;
-    }
-
-    if (!storeAnalytics) {
-      continue;
-    }
-
-    storeAnalytics.orderCount += 1;
-    storeAnalytics.paidOrderCount += 1;
-    storeAnalytics.revenue += order.totalPrice;
-    storeAnalytics.soldCost += orderSoldCost;
-
-    if (order.channel === "ONLINE") {
-      storeAnalytics.onlineRevenue += order.totalPrice;
-    } else {
-      storeAnalytics.offlineRevenue += order.totalPrice;
-    }
-  }
-
-  for (const receipt of receipts) {
-    const costPrice = resolveCostPrice(receipt.productId);
-
-    if (costPrice === null) {
-      continue;
-    }
-
-    const receiptValue = costPrice * receipt.quantity;
-    const storeAnalytics = storeAnalyticsMap.get(String(receipt.storeId || ""));
-
-    stockInCost += receiptValue;
-
-    if (storeAnalytics) {
-      storeAnalytics.stockInCost += receiptValue;
-    }
-  }
-
-  for (const adjustment of adjustments) {
-    const costPrice = resolveCostPrice(adjustment.productId);
-
-    if (costPrice === null) {
-      continue;
-    }
-
-    const adjustmentValue = costPrice * adjustment.quantity;
-    const storeAnalytics = storeAnalyticsMap.get(String(adjustment.storeId || ""));
-
-    writeOffCost += adjustmentValue;
-
-    if (storeAnalytics) {
-      storeAnalytics.writeOffCost += adjustmentValue;
-    }
-  }
-
-  for (const inventory of storeInventories) {
-    const costPrice = resolveCostPrice(inventory.productId);
-    const stockUnits = Number(inventory.totalStock || 0);
-    const inventoryEntryValue = costPrice === null ? 0 : costPrice * stockUnits;
-    const storeAnalytics = storeAnalyticsMap.get(String(inventory.storeId || ""));
-
-    inventoryValue += inventoryEntryValue;
-
-    if (storeAnalytics) {
-      storeAnalytics.inventoryValue += inventoryEntryValue;
-      storeAnalytics.totalStockUnits += stockUnits;
-    }
-  }
-
-  const storesAnalytics = [...storeAnalyticsMap.values()]
-    .map((entry) => ({
-      ...entry,
-      estimatedNetProfit: entry.revenue - entry.soldCost - entry.writeOffCost,
-      grossProfit: entry.revenue - entry.soldCost,
-    }))
-    .sort((left, right) => right.revenue - left.revenue);
-
-  return {
-    stores: storesAnalytics,
-    summary: {
-      averageOrderValue: paidOrders.length > 0 ? totalPaidRevenue / paidOrders.length : 0,
-      estimatedNetProfit: totalPaidRevenue - soldCost - writeOffCost,
-      grossProfit: totalPaidRevenue - soldCost,
-      inventoryValue,
-      missingCostProductCount: missingCostProductIds.size,
-      missingCostProducts: [...missingCostProductIds]
-        .map((productId) => productById.get(productId))
-        .filter(Boolean)
-        .slice(0, 5)
-        .map((product) => product.name),
-      monthlyGrossProfit: monthlyRevenue - monthlySoldCost,
-      monthlyRevenue,
-      paidOrders: paidOrders.length,
-      paidRevenue: totalPaidRevenue,
-      soldCost,
-      stockInCost,
-      totalOrders,
-      writeOffCost,
-    },
-  };
-};
-
+// Hệ thống chỉ có đúng một kho tổng (nguồn mặc định khi chuyển hàng).
 const createManagedStore = async (payload) => {
   const nextPayload = buildStorePayload(payload, { isCreate: true });
+
+  if (nextPayload.type === STORE_TYPES.CENTRAL) {
+    const central = await Store.exists({ type: STORE_TYPES.CENTRAL });
+
+    if (central) {
+      throw new AppError(
+        "The central warehouse already exists",
+        409,
+        "CENTRAL_STORE_EXISTS"
+      );
+    }
+  }
 
   return runInTransaction(async (session) => {
     const store = await Store.create([nextPayload], { session });
@@ -631,9 +491,77 @@ const createManagedStore = async (payload) => {
   });
 };
 
+// Chưa cho ngừng hoạt động khi còn đơn đang xử lý, còn nhân viên được gán
+// hoặc còn phiếu chuyển hàng chưa nhận; kho tổng luôn phải hoạt động.
+const assertStoreCanBeDeactivated = async (store) => {
+  if (store.type === STORE_TYPES.CENTRAL) {
+    throw new AppError(
+      "The central warehouse cannot be deactivated",
+      409,
+      "CENTRAL_STORE_REQUIRED"
+    );
+  }
+
+  const [activeOrders, staffCount, pendingTransfers] = await Promise.all([
+    Order.countDocuments({
+      storeId: store._id,
+      status: { $in: ACTIVE_ORDER_STATUSES },
+    }),
+    User.countDocuments({
+      storeId: store._id,
+      role: { $in: ASSIGNABLE_ROLES },
+      isActive: true,
+    }),
+    StockTransfer.countDocuments({
+      status: "PENDING",
+      $or: [{ fromStoreId: store._id }, { toStoreId: store._id }],
+    }),
+  ]);
+
+  if (activeOrders > 0) {
+    throw new AppError(
+      "Store still has orders in progress",
+      409,
+      "STORE_HAS_ACTIVE_ORDERS",
+      { count: activeOrders }
+    );
+  }
+
+  if (staffCount > 0) {
+    throw new AppError(
+      "Move or disable the staff assigned to this store first",
+      409,
+      "STORE_HAS_STAFF",
+      { count: staffCount }
+    );
+  }
+
+  if (pendingTransfers > 0) {
+    throw new AppError(
+      "Store still has stock transfers waiting to be received",
+      409,
+      "STORE_HAS_PENDING_TRANSFERS",
+      { count: pendingTransfers }
+    );
+  }
+};
+
+// Loại cửa hàng (kho tổng / chi nhánh) cố định sau khi tạo.
 const updateManagedStore = async (storeId, payload) => {
-  await ensureStoreExists(storeId);
-  const nextPayload = buildStorePayload(payload);
+  const store = await ensureStoreExists(storeId);
+
+  if (
+    payload.type !== undefined &&
+    String(payload.type).trim().toUpperCase() !== store.type
+  ) {
+    throw new AppError("Store type cannot be changed", 400, "STORE_TYPE_IMMUTABLE");
+  }
+
+  const nextPayload = buildStorePayload({ ...payload, type: undefined });
+
+  if (nextPayload.isActive === false && store.isActive) {
+    await assertStoreCanBeDeactivated(store);
+  }
 
   return Store.findByIdAndUpdate(storeId, nextPayload, {
     new: true,
@@ -642,7 +570,7 @@ const updateManagedStore = async (storeId, payload) => {
 };
 
 const getManagedStaff = async ({ includeInactive = true } = {}) => {
-  const query = { role: { $in: STAFF_ROLES } };
+  const query = { role: { $in: ASSIGNABLE_ROLES } };
 
   if (!includeInactive) {
     query.isActive = true;
@@ -684,6 +612,7 @@ const createManagedStaff = async (payload) => {
     });
   }
 
+  await assertStaffStore(nextPayload.role, nextPayload.storeId);
   await assertUniqueStaffIdentity({
     email: nextPayload.email,
     phone: nextPayload.phone,
@@ -700,7 +629,7 @@ const createManagedStaff = async (payload) => {
 const updateManagedStaff = async (actor, userId, payload) => {
   const staff = await User.findById(userId).select("+password");
 
-  if (!staff || !STAFF_ROLES.includes(staff.role)) {
+  if (!staff || !ASSIGNABLE_ROLES.includes(staff.role)) {
     throw new AppError("Staff account was not found", 404, "STAFF_NOT_FOUND");
   }
 
@@ -717,15 +646,11 @@ const updateManagedStaff = async (actor, userId, payload) => {
 
   const nextPayload = await buildStaffPayload(payload);
 
-  if (
-    String(staff._id) === String(actor._id) &&
-    nextPayload.role &&
-    nextPayload.role !== USER_ROLES.OWNER
-  ) {
-    throw new AppError(
-      "You cannot remove owner access from your own account",
-      409,
-      "SELF_ROLE_CHANGE_FORBIDDEN"
+  // Kiểm tra theo giá trị sau khi sửa: không được gỡ chi nhánh của Sales/Manager.
+  if (nextPayload.role !== undefined || nextPayload.storeId !== undefined) {
+    await assertStaffStore(
+      nextPayload.role ?? staff.role,
+      nextPayload.storeId !== undefined ? nextPayload.storeId : staff.storeId
     );
   }
 
@@ -741,6 +666,11 @@ const updateManagedStaff = async (actor, userId, payload) => {
   }
 
   Object.assign(staff, nextPayload);
+
+  // Đặt lại mật khẩu: các phiên đăng nhập cũ của nhân viên hết hiệu lực.
+  if (nextPayload.password) {
+    staff.passwordChangedAt = new Date();
+  }
 
   if (nextPayload.isActive === false) {
     staff.disabledAt = new Date();
@@ -773,7 +703,9 @@ const getStockTransfers = async ({ status = "ALL", storeId } = {}) => {
   ).lean();
 };
 
-const createStockTransfer = async (payload, owner) => {
+// Chuyển hàng giữa hai cửa hàng bất kỳ (chỉ Owner). Kho gửi bị trừ ngay khi
+// tạo phiếu; chi nhánh nhận được cộng khi Manager xác nhận đã nhận.
+const createTransferInSession = async (payload, owner, session, extra = {}) => {
   const fromStoreId = ensureObjectId(payload.fromStoreId, "fromStoreId");
   const toStoreId = ensureObjectId(payload.toStoreId, "toStoreId");
 
@@ -799,42 +731,40 @@ const createStockTransfer = async (payload, owner) => {
     );
   }
 
-  if (fromStore.type !== STORE_TYPES.CENTRAL) {
-    throw new AppError(
-      "Stock transfers must start from the central warehouse",
-      400,
-      "INVALID_TRANSFER_SOURCE"
-    );
-  }
-
-  if (toStore.type !== STORE_TYPES.BRANCH) {
-    throw new AppError(
-      "Stock transfers can only be sent to a branch store",
-      400,
-      "INVALID_TRANSFER_DESTINATION"
-    );
-  }
-
   const items = inventoryMutationService.normalizeItems(payload.items);
 
-  return runInTransaction(async (session) => {
-    await inventoryMutationService.writeOffStock(fromStoreId, items, session);
-
-    const transfer = await StockTransfer.create(
-      [
-        {
-          createdBy: owner._id,
-          fromStoreId,
-          items,
-          toStoreId,
-        },
-      ],
-      { session }
+  if (items.some((item) => item.quantity > MAX_TRANSFER_QUANTITY)) {
+    throw new AppError(
+      `Each item can transfer at most ${MAX_TRANSFER_QUANTITY} units`,
+      400,
+      "TRANSFER_QUANTITY_LIMIT_EXCEEDED"
     );
+  }
 
-    return populateTransfer(StockTransfer.findById(transfer[0]._id)).session(session);
-  });
+  await inventoryMutationService.writeOffStock(fromStoreId, items, session);
+
+  const [transfer] = await StockTransfer.create(
+    [
+      {
+        createdBy: owner._id,
+        fromStoreId,
+        items,
+        toStoreId,
+        note: String(payload.note || "").trim(),
+        restockRequestId: extra.restockRequestId || null,
+      },
+    ],
+    { session }
+  );
+
+  return transfer;
 };
+
+const createStockTransfer = async (payload, owner) =>
+  runInTransaction(async (session) => {
+    const transfer = await createTransferInSession(payload, owner, session);
+    return populateTransfer(StockTransfer.findById(transfer._id)).session(session);
+  });
 
 const cancelStockTransfer = async (transferId) =>
   runInTransaction(async (session) => {
@@ -861,21 +791,139 @@ const cancelStockTransfer = async (transferId) =>
     transfer.status = "CANCELLED";
     await transfer.save({ session });
 
+    // Phiếu tạo từ đề xuất nhập hàng: đề xuất quay về chờ Owner duyệt lại.
+    if (transfer.restockRequestId) {
+      await InventoryRequest.updateOne(
+        { _id: transfer.restockRequestId, status: "IN_TRANSIT" },
+        {
+          $set: {
+            status: "FORWARDED",
+            transferId: null,
+            approvedBy: null,
+            approvedAt: null,
+            approvedQuantity: null,
+          },
+        },
+        { session }
+      );
+    }
+
     return populateTransfer(StockTransfer.findById(transfer._id)).session(session);
   });
 
+const findForwardedRequest = async (requestId, session) => {
+  const request = await InventoryRequest.findById(ensureObjectId(requestId, "requestId"))
+    .session(session || null);
+
+  if (!request) {
+    throw new AppError("Restock request was not found", 404, "REQUEST_NOT_FOUND");
+  }
+
+  if (request.status !== "FORWARDED") {
+    throw new AppError(
+      "Only requests forwarded by a manager can be reviewed",
+      409,
+      "REQUEST_NOT_FORWARDED"
+    );
+  }
+
+  return request;
+};
+
+// Owner duyệt đề xuất: tạo phiếu chuyển hàng (mặc định từ kho tổng) tới chi
+// nhánh đề xuất. Đề xuất tự hoàn tất khi Manager xác nhận đã nhận hàng.
+const approveRestockRequest = async (requestId, payload, owner) =>
+  runInTransaction(async (session) => {
+    const request = await findForwardedRequest(requestId, session);
+    const quantity =
+      payload.quantity === undefined || payload.quantity === null || payload.quantity === ""
+        ? request.forwardedQuantity || request.requestedQuantity
+        : Number(payload.quantity);
+
+    if (!Number.isInteger(quantity) || quantity < 1 || quantity > MAX_TRANSFER_QUANTITY) {
+      throw new AppError(
+        `Approved quantity must be between 1 and ${MAX_TRANSFER_QUANTITY}`,
+        400,
+        "INVALID_REQUESTED_QUANTITY"
+      );
+    }
+
+    let fromStoreId = payload.fromStoreId;
+
+    if (!fromStoreId) {
+      const central = await Store.findOne({ type: STORE_TYPES.CENTRAL, isActive: true })
+        .session(session)
+        .lean();
+
+      if (!central) {
+        throw new AppError(
+          "No active central warehouse to transfer from",
+          409,
+          "CENTRAL_STORE_NOT_FOUND"
+        );
+      }
+
+      fromStoreId = central._id;
+    }
+
+    const note = String(payload.note || "").trim();
+    const transfer = await createTransferInSession(
+      {
+        fromStoreId: String(fromStoreId),
+        toStoreId: String(request.storeId),
+        items: [{ productId: String(request.productId), quantity }],
+        note: note || "Duyệt đề xuất nhập hàng của chi nhánh",
+      },
+      owner,
+      session,
+      { restockRequestId: request._id }
+    );
+
+    request.status = "IN_TRANSIT";
+    request.approvedQuantity = quantity;
+    request.approvedBy = owner._id;
+    request.approvedAt = new Date();
+    request.ownerNote = note;
+    request.transferId = transfer._id;
+    await request.save({ session });
+
+    return { request, transfer };
+  });
+
+// Owner từ chối đề xuất — bắt buộc ghi lý do (Manager và Sales đều thấy).
+const rejectRestockRequest = async (requestId, payload, owner) => {
+  const note = String(payload.note || "").trim();
+
+  if (!note) {
+    throw new AppError(
+      "A reason is required when rejecting a restock request",
+      400,
+      "OWNER_NOTE_REQUIRED"
+    );
+  }
+
+  const request = await findForwardedRequest(requestId);
+  request.status = "CANCELLED";
+  request.ownerNote = note;
+  request.handledBy = owner._id;
+  request.resolvedAt = new Date();
+  await request.save();
+  return request;
+};
+
 module.exports = {
+  approveRestockRequest,
   cancelStockTransfer,
   createManagedProduct,
   createManagedStaff,
   createManagedStore,
   createStockTransfer,
   getManagedProducts,
-  getRevenueAnalytics,
   getManagedStaff,
   getManagedStores,
   getStockTransfers,
   updateManagedProduct,
   updateManagedStaff,
+  rejectRestockRequest,
   updateManagedStore,
 };
