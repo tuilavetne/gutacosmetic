@@ -48,6 +48,18 @@ const stockTransferSchema = new mongoose.Schema(
       ref: "User",
       default: null,
     },
+    note: {
+      type: String,
+      trim: true,
+      maxlength: 300,
+      default: "",
+    },
+    // Phiếu tạo khi Owner duyệt đề xuất nhập hàng (nếu có).
+    restockRequestId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "InventoryRequest",
+      default: null,
+    },
   },
   { timestamps: true }
 );

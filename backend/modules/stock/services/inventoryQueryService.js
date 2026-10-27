@@ -268,13 +268,16 @@ const getInventoryAlerts = async ({ storeId, user }) => {
   });
 };
 
+const REQUEST_USER_FIELDS = "fullName email phone role";
+
 const populateInventoryRequest = (request) =>
   request.populate([
     { path: "storeId", select: "name address phone type" },
     { path: "productId", select: "name sku brand category image price" },
-    { path: "requestedBy", select: "fullName email phone role" },
-    { path: "handledBy", select: "fullName email phone role" },
-    { path: "acknowledgedBy", select: "fullName email phone role" },
+    { path: "requestedBy", select: REQUEST_USER_FIELDS },
+    { path: "handledBy", select: REQUEST_USER_FIELDS },
+    { path: "forwardedBy", select: REQUEST_USER_FIELDS },
+    { path: "approvedBy", select: REQUEST_USER_FIELDS },
   ]);
 
 const populateInventoryReturnRequest = (request) =>
@@ -366,43 +369,56 @@ const getRestockRequests = async ({ status = "OPEN", storeId, user }) => {
   return InventoryRequest.find(query)
     .populate("storeId", "name address phone type")
     .populate("productId", "name sku brand category image price")
-    .populate("requestedBy", "fullName email phone role")
-    .populate("handledBy", "fullName email phone role")
+    .populate("requestedBy", REQUEST_USER_FIELDS)
+    .populate("handledBy", REQUEST_USER_FIELDS)
+    .populate("forwardedBy", REQUEST_USER_FIELDS)
+    .populate("approvedBy", REQUEST_USER_FIELDS)
     .sort({ status: 1, createdAt: -1 })
     .lean();
 };
 
+const assertManagerOwnsRequest = (request, user) => {
+  if (user.role !== USER_ROLES.MANAGER) {
+    throw new AppError("Only managers can handle restock requests", 403, "FORBIDDEN");
+  }
+
+  if (String(request.storeId) !== String(user.storeId)) {
+    throw new AppError("You cannot update another store request", 403, "FORBIDDEN");
+  }
+};
+
+const findRestockRequestOrThrow = async (requestId, session) => {
+  const request = await InventoryRequest.findById(requestId)
+    .session(session || null)
+    .catch(() => null);
+
+  if (!request) {
+    throw new AppError("Restock request was not found", 404, "REQUEST_NOT_FOUND");
+  }
+
+  return request;
+};
+
+// Manager hủy đề xuất (Sales vừa gửi hoặc đang chờ Owner duyệt). Bắt buộc
+// ghi lý do để Sales biết vì sao không nhập hàng.
 const updateRestockRequestStatus = async ({
   managerNote,
   requestId,
   status,
   user,
 }) => {
-  if (!["RESOLVED", "CANCELLED"].includes(status)) {
+  if (status !== "CANCELLED") {
     throw new AppError("Invalid request status", 400, "INVALID_REQUEST_STATUS");
   }
 
-  const request = await InventoryRequest.findById(requestId);
+  const request = await findRestockRequestOrThrow(requestId);
+  assertManagerOwnsRequest(request, user);
 
-  if (!request) {
-    throw new AppError("Restock request was not found", 404, "REQUEST_NOT_FOUND");
-  }
-
-  if (
-    user.role !== USER_ROLES.OWNER &&
-    String(request.storeId) !== String(user.storeId)
-  ) {
-    throw new AppError("You cannot update another store request", 403, "FORBIDDEN");
-  }
-
-  // Đề xuất đã nhận hàng/đã hủy thì không đổi được nữa (tránh "hủy" một đề
-  // xuất đã nhập kho).
-  if (request.status !== "OPEN") {
+  if (!["OPEN", "FORWARDED"].includes(request.status)) {
     throw new AppError("This restock request is already closed", 409, "REQUEST_CLOSED");
   }
 
-  // Hủy đề xuất phải ghi lý do để Sales biết vì sao không nhập hàng.
-  if (status === "CANCELLED" && !String(managerNote || "").trim()) {
+  if (!String(managerNote || "").trim()) {
     throw new AppError(
       "A note is required when cancelling a restock request",
       400,
@@ -410,143 +426,49 @@ const updateRestockRequestStatus = async ({
     );
   }
 
-  request.status = status;
-  request.managerNote = managerNote || "";
+  request.status = "CANCELLED";
+  request.managerNote = String(managerNote).trim();
   request.handledBy = user._id;
   request.resolvedAt = new Date();
-
   await request.save();
 
   return populateInventoryRequest(request);
 };
 
-const acknowledgeRestockRequest = async ({ requestId, user }) => {
-  const request = await InventoryRequest.findById(requestId);
-
-  if (!request) {
-    throw new AppError("Restock request was not found", 404, "REQUEST_NOT_FOUND");
-  }
-
-  if (
-    user.role !== USER_ROLES.OWNER &&
-    String(request.storeId) !== String(user.storeId)
-  ) {
-    throw new AppError("You cannot acknowledge another store request", 403, "FORBIDDEN");
-  }
+// Manager chuyển đề xuất của Sales lên Owner (được sửa số lượng, ghi chú).
+const forwardRestockRequest = async ({ note, quantity, requestId, user }) => {
+  const request = await findRestockRequestOrThrow(requestId);
+  assertManagerOwnsRequest(request, user);
 
   if (request.status !== "OPEN") {
-    throw new AppError("This restock request is already closed", 409, "REQUEST_CLOSED");
+    throw new AppError("This restock request is already handled", 409, "REQUEST_CLOSED");
   }
 
-  request.acknowledgedBy = user._id;
-  request.acknowledgedAt = new Date();
+  const forwardedQuantity =
+    quantity === undefined || quantity === null || quantity === ""
+      ? request.requestedQuantity
+      : Number(quantity);
+
+  if (
+    !Number.isInteger(forwardedQuantity) ||
+    forwardedQuantity < 1 ||
+    forwardedQuantity > MAX_STOCK_RECEIVE_QUANTITY
+  ) {
+    throw new AppError(
+      `Forwarded quantity must be between 1 and ${MAX_STOCK_RECEIVE_QUANTITY}`,
+      400,
+      "INVALID_REQUESTED_QUANTITY"
+    );
+  }
+
+  request.status = "FORWARDED";
+  request.forwardedQuantity = forwardedQuantity;
+  request.forwardedBy = user._id;
+  request.forwardedAt = new Date();
+  request.managerNote = String(note || "").trim();
   await request.save();
 
   return populateInventoryRequest(request);
-};
-
-const receiveRestockRequest = async ({
-  expiryDate: rawExpiryDate,
-  managerNote,
-  receivedQuantity,
-  requestId,
-  user,
-}) => {
-  const quantity = Number.parseInt(receivedQuantity, 10);
-  const expiryDate = parseExpiryDate(rawExpiryDate);
-
-  if (!Number.isInteger(quantity) || quantity < 1) {
-    throw new AppError("Received quantity is invalid", 400, "INVALID_RECEIVED_QUANTITY");
-  }
-
-  if (quantity > MAX_STOCK_RECEIVE_QUANTITY) {
-    throw new AppError(
-      `Received quantity cannot exceed ${MAX_STOCK_RECEIVE_QUANTITY}`,
-      400,
-      "RECEIVED_QUANTITY_LIMIT_EXCEEDED",
-      {
-        maxAllowedQuantity: MAX_STOCK_RECEIVE_QUANTITY,
-        receivedQuantity: quantity,
-      }
-    );
-  }
-
-  return runInTransaction(async (session) => {
-    if (user.role !== USER_ROLES.MANAGER) {
-      throw new AppError(
-        "Only the destination store manager can receive restock requests",
-        403,
-        "FORBIDDEN"
-      );
-    }
-
-    const request = await InventoryRequest.findById(requestId).session(session);
-
-    if (!request) {
-      throw new AppError("Restock request was not found", 404, "REQUEST_NOT_FOUND");
-    }
-
-    if (
-      user.role !== USER_ROLES.OWNER &&
-      String(request.storeId) !== String(user.storeId)
-    ) {
-      throw new AppError("You cannot receive stock for another store", 403, "FORBIDDEN");
-    }
-
-    if (request.status !== "OPEN") {
-      throw new AppError("This restock request is already closed", 409, "REQUEST_CLOSED");
-    }
-
-    if (quantity > request.requestedQuantity) {
-      throw new AppError(
-        "Received quantity cannot exceed the requested quantity",
-        400,
-        "RECEIVED_QUANTITY_EXCEEDS_REQUEST",
-        {
-          receivedQuantity: quantity,
-          requestedQuantity: request.requestedQuantity,
-        }
-      );
-    }
-
-    await inventoryMutationService.receiveStock(
-      request.storeId,
-      [{ productId: request.productId, quantity }],
-      session
-    );
-    await applyReceivedExpiry(
-      request.storeId,
-      request.productId,
-      expiryDate,
-      session
-    );
-
-    await InventoryReceipt.create(
-      [
-        {
-          storeId: request.storeId,
-          productId: request.productId,
-          quantity,
-          expiryDate,
-          source: "SALES_REQUEST",
-          note:
-            managerNote || `Manager received ${quantity} item(s) from Sales request`,
-          referenceId: request._id,
-          receivedBy: user._id,
-        },
-      ],
-      { session }
-    );
-
-    request.status = "RESOLVED";
-    request.managerNote =
-      managerNote || `Manager received ${quantity} item(s) into branch stock`;
-    request.handledBy = user._id;
-    request.resolvedAt = new Date();
-    await request.save({ session });
-
-    return populateInventoryRequest(request);
-  });
 };
 
 const receiveDirectStock = async ({
@@ -1194,6 +1116,20 @@ const confirmIncomingTransfer = async ({ transferId, user }) =>
     transfer.confirmedBy = user._id;
     await transfer.save({ session });
 
+    if (transfer.restockRequestId) {
+      await InventoryRequest.updateOne(
+        { _id: transfer.restockRequestId, status: "IN_TRANSIT" },
+        {
+          $set: {
+            status: "RESOLVED",
+            handledBy: user._id,
+            resolvedAt: new Date(),
+          },
+        },
+        { session }
+      );
+    }
+
     return transfer.populate([
       { path: "fromStoreId", select: "name address phone type" },
       { path: "toStoreId", select: "name address phone type" },
@@ -1204,11 +1140,11 @@ const confirmIncomingTransfer = async ({ transferId, user }) =>
   });
 
 module.exports = {
-  acknowledgeRestockRequest,
   confirmIncomingTransfer,
   createInventoryAdjustment,
   createInventoryReturnRequest,
   createRestockRequest,
+  forwardRestockRequest,
   getIncomingTransfers,
   getInventoryAdjustments,
   getInventoryReceipts,
@@ -1218,7 +1154,6 @@ module.exports = {
   getProductInventory,
   getRestockRequests,
   receiveDirectStock,
-  receiveRestockRequest,
   reviewInventoryReturnRequest,
   updateInventoryExpiry,
   updateRestockRequestStatus,

@@ -686,6 +686,14 @@ const getOrdersForUser = async (user, filters = {}) => {
       );
     }
     query.storeId = user.storeId;
+  } else if (user.role === USER_ROLES.OWNER && filters.storeId) {
+    // Owner xem đơn của toàn chuỗi, có thể lọc theo từng chi nhánh.
+    if (!mongoose.isValidObjectId(filters.storeId)) {
+      throw new AppError("Store ID is invalid", 400, "VALIDATION_ERROR", {
+        field: "storeId",
+      });
+    }
+    query.storeId = filters.storeId;
   }
 
   if (filters.channel) {

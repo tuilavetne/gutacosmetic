@@ -43,9 +43,14 @@ const inventoryRequestSchema = new mongoose.Schema(
       trim: true,
       maxlength: 300,
     },
+    // OPEN: Sales vừa đề xuất, chờ Manager xem.
+    // FORWARDED: Manager đã chuyển lên Owner, chờ duyệt.
+    // IN_TRANSIT: Owner duyệt và tạo phiếu chuyển hàng, chờ chi nhánh nhận.
+    // RESOLVED: Manager xác nhận đã nhận hàng chuyển đến.
+    // CANCELLED: Manager hủy hoặc Owner từ chối (có lý do).
     status: {
       type: String,
-      enum: ["OPEN", "RESOLVED", "CANCELLED"],
+      enum: ["OPEN", "FORWARDED", "IN_TRANSIT", "RESOLVED", "CANCELLED"],
       default: "OPEN",
     },
     managerNote: {
@@ -60,6 +65,46 @@ const inventoryRequestSchema = new mongoose.Schema(
     },
     acknowledgedAt: {
       type: Date,
+      default: null,
+    },
+    // Số lượng Manager chuyển lên Owner (có thể khác số Sales đề xuất).
+    forwardedQuantity: {
+      type: Number,
+      min: 1,
+      default: null,
+    },
+    forwardedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
+    forwardedAt: {
+      type: Date,
+      default: null,
+    },
+    approvedQuantity: {
+      type: Number,
+      min: 1,
+      default: null,
+    },
+    approvedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
+    approvedAt: {
+      type: Date,
+      default: null,
+    },
+    ownerNote: {
+      type: String,
+      trim: true,
+      maxlength: 300,
+      default: "",
+    },
+    transferId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "StockTransfer",
       default: null,
     },
   },
