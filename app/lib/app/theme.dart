@@ -39,7 +39,9 @@ ThemeData buildAppTheme() {
     useMaterial3: true,
     colorScheme: scheme,
     scaffoldBackgroundColor: AppColors.background,
-    // Be Vietnam Pro có thể thêm vào assets; mặc định Roboto đã hỗ trợ tiếng Việt.
+    // Roboto đóng gói sẵn (xem pubspec): Roboto mặc định trên web thiếu tiếng
+    // Việt, làm chữ số bị lấy từ font emoji.
+    fontFamily: 'RobotoVN',
   );
 
   final textTheme = base.textTheme.apply(

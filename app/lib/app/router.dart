@@ -21,6 +21,7 @@ import '../features/customer/presentation/product_detail_screen.dart';
 import '../features/customer/presentation/wishlist_screen.dart';
 import '../features/customer/presentation/write_review_screen.dart';
 import '../features/manager/presentation/manager_shell.dart';
+import '../features/owner/presentation/owner_shell.dart';
 import '../features/sales/presentation/sales_shell.dart';
 import '../features/session/presentation/select_store_screen.dart';
 import '../features/session/presentation/splash_screen.dart';
@@ -81,11 +82,10 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const SelectStoreScreen(),
       ),
 
-      // ---- Owner (giai đoạn 7) ----
+      // ---- Owner ----
       GoRoute(
         path: AppRoutes.owner,
-        builder: (context, state) =>
-            const PhasePlaceholder(title: 'Trang chủ Owner', phase: 7),
+        builder: (context, state) => const OwnerShell(),
       ),
 
       // ---- Manager / Thu ngân ----

@@ -2,6 +2,7 @@ const express = require("express");
 const ownerController = require("../controllers/ownerController");
 const protect = require("../../../middlewares/authMiddleware");
 const { authorize } = require("../../../middlewares/roleMiddleware");
+const { uploadProductImages } = require("../../../config/cloudinary");
 const { USER_ROLES } = require("../../../constants/business");
 
 const router = express.Router();
@@ -9,7 +10,14 @@ const router = express.Router();
 router.use(protect);
 router.use(authorize(USER_ROLES.OWNER));
 
-router.get("/analytics/revenue", ownerController.getRevenueAnalytics);
+router.get("/dashboard", ownerController.getDashboard);
+router.get("/analytics/revenue", ownerController.getRevenueReport);
+
+router.post(
+  "/products/images",
+  uploadProductImages,
+  ownerController.uploadProductImages
+);
 
 router
   .route("/products")
@@ -38,5 +46,15 @@ router
   .post(ownerController.createTransfer);
 
 router.patch("/transfers/:transferId/cancel", ownerController.cancelTransfer);
+
+// Đề xuất nhập hàng Manager đã chuyển lên: duyệt (tạo phiếu chuyển) / từ chối.
+router.post(
+  "/restock-requests/:requestId/approve",
+  ownerController.approveRestockRequest
+);
+router.post(
+  "/restock-requests/:requestId/reject",
+  ownerController.rejectRestockRequest
+);
 
 module.exports = router;

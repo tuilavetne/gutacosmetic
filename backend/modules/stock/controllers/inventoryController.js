@@ -77,25 +77,11 @@ const updateRestockRequestStatus = async (req, res, next) => {
   }
 };
 
-const acknowledgeRestockRequest = async (req, res, next) => {
+const forwardRestockRequest = async (req, res, next) => {
   try {
-    const request = await inventoryService.acknowledgeRestockRequest({
-      requestId: req.params.requestId,
-      user: req.user,
-    });
-
-    res.json({ request });
-  } catch (error) {
-    next(error);
-  }
-};
-
-const receiveRestockRequest = async (req, res, next) => {
-  try {
-    const request = await inventoryService.receiveRestockRequest({
-      expiryDate: req.body.expiryDate,
-      managerNote: req.body.managerNote,
-      receivedQuantity: req.body.receivedQuantity,
+    const request = await inventoryService.forwardRestockRequest({
+      note: req.body.note,
+      quantity: req.body.quantity,
       requestId: req.params.requestId,
       user: req.user,
     });
@@ -269,11 +255,11 @@ const confirmIncomingTransfer = async (req, res, next) => {
 };
 
 module.exports = {
-  acknowledgeRestockRequest,
   confirmIncomingTransfer,
   createInventoryAdjustment,
   createInventoryReturnRequest,
   createRestockRequest,
+  forwardRestockRequest,
   getIncomingTransfers,
   getInventoryAdjustments,
   getInventoryReceipts,
@@ -283,7 +269,6 @@ module.exports = {
   getProductInventory,
   getRestockRequests,
   receiveDirectStock,
-  receiveRestockRequest,
   reviewInventoryReturnRequest,
   updateInventoryExpiry,
   updateRestockRequestStatus,
